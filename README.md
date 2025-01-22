@@ -25,6 +25,10 @@ The architecture follows a serverless-first design, incorporating:
 
 For a visual representation, refer to the assets/architecture-diagram.png file in this repository.
 
+Below is the architecture diagram illustrating the project's design:
+
+![Architecture Diagram](./assets/architecture_diagram.png)
+
 ## Getting Started
 
 ### Prerequisites

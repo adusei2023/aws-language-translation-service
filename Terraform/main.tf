@@ -17,20 +17,7 @@ resource "aws_s3_bucket" "translation_responses" {
 # Placeholder for IAM Role
 resource "aws_iam_role" "lambda_execution_role" {
   name               = var.lambda_execution_role_name
-  assume_role_policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": "sts:AssumeRole",
-      "Principal": {
-        "Service": "lambda.amazonaws.com"
-      },
-      "Effect": "Allow"
-    }
-  ]
-}
-EOF
+  #specifics to be added later
 }
 
 # Placeholder for IAM Policy Attachment
@@ -49,21 +36,7 @@ resource "aws_lambda_function" "translate_lambda" {
   
   # Code source will be added later
   filename         = var.lambda_zip_file
-  source_code_hash = filebase64sha256(var.lambda_zip_file)
+  #to be added 
 }
 
-# Outputs
-output "s3_translation_requests_bucket" {
-  description = "Name of the S3 bucket for translation requests"
-  value       = aws_s3_bucket.translation_requests.id
-}
 
-output "s3_translation_responses_bucket" {
-  description = "Name of the S3 bucket for translation responses"
-  value       = aws_s3_bucket.translation_responses.id
-}
-
-output "lambda_function_arn" {
-  description = "ARN of the Lambda function"
-  value       = aws_lambda_function.translate_lambda.arn
-}

@@ -1,7 +1,7 @@
 # Provider Configuration
-provider "aws" {
-  region = var.aws_region
-}
+#provider "aws" {
+ # region = var.aws_region
+#}
 
 # S3 Module - Creates an S3 bucket for storing translation input files
 module "s3" {

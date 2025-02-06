@@ -5,13 +5,13 @@ variable "aws_region" {
 }
 
 # S3 Buckets for Requests and Responses
-variable "requests_bucket_name" {
+variable "s3_requests_bucket" {
   description = "S3 bucket name for storing translation requests"
   default = "requests_bucket_007"
   type        = string
 }
 
-variable "responses_bucket_name" {
+variable "s3_responses_bucket" {
   description = "S3 bucket name for storing translation responses"
   type        = string
   default     = "response_bucket_007"  

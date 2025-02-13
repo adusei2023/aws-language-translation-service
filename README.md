@@ -24,7 +24,7 @@ The architecture is designed to be scalable, serverless, and efficient. It inclu
 
 ## **Architecture**
 
-![Architecture Diagram](assets/project_architecture.png)
+![Architecture Diagram](./assets/Architecture_diagram.png)
 
 1. Users upload JSON files containing text to be translated via API Gateway.
 2. The request is routed to a Lambda function.

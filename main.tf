@@ -1,33 +1,69 @@
-# Provider Configuration
-#provider "aws" {
-# region = var.aws_region
-#}
+# ===========================
+#   Infrastructure Modules
+# ===========================
 
-# S3 Module - Creates an S3 bucket for storing translation input files
-module "s3" {
+# S3 Bucket Module for storing translation requests
+module "translation_request_bucket" {
   source                = "./modules/s3"
-  requests_bucket_name  = var.s3_requests_bucket
-  responses_bucket_name = var.s3_responses_bucket
+  bucket_name           = var.translation_request_bucket
+  kms_key_id            = module.kms_encryption.key_arn
+  tags                  = var.tags
+  project               = var.project
+  environment           = var.environment
+  region                = var.region
+  bucket_policy_actions = var.request_bucket_policy_actions
 }
 
-# IAM Module - Creates an IAM role for Lambda execution
-module "iam" {
-  source               = "./modules/iam"
-  requests_bucket_arn  = module.s3.s3_requests_bucket_arn
-  responses_bucket_arn = module.s3.s3_responses_bucket_arn
+# S3 Bucket Module for storing translation responses
+module "translation_response_bucket" {
+  source                = "./modules/s3"
+  bucket_name           = var.translation_response_bucket
+  kms_key_id            = module.kms_encryption.key_arn
+  tags                  = var.tags
+  project               = var.project
+  environment           = var.environment
+  region                = var.region
+  bucket_policy_actions = var.response_bucket_policy_actions
 }
 
-# Lambda Module - Deploys the function that performs translations
-module "lambda" {
-  source               = "./modules/lambda"
-  lambda_function_name = var.lambda_name
-  lambda_role_arn      = module.iam.lambda_role_arn
-  s3_requests_bucket   = module.s3.s3_requests_bucket
-  s3_responses_bucket  = module.s3.s3_responses_bucket
+# AWS Lambda Module - Deploys the function responsible for performing translations
+module "translation_lambda" {
+  source              = "./modules/lambda"
+  function_name       = var.lambda_function_name
+  function_handler    = var.lambda_function_handler
+  request_bucket      = module.translation_request_bucket.bucket_name
+  response_bucket     = module.translation_response_bucket.bucket_name
+  request_bucket_arn  = module.translation_request_bucket.bucket_arn
+  response_bucket_arn = module.translation_response_bucket.bucket_arn
+  tags                = var.tags
+  project             = var.project
+  environment         = var.environment
+  region              = var.region
+  kms_key_id          = module.kms_encryption.key_arn
 }
 
-# API Gateway Module - Exposes the Lambda function via an HTTP endpoint
-module "api_gateway" {
-  source            = "./modules/api_gateway"
-  lambda_invoke_arn = module.lambda.lambda_invoke_arn
+# AWS KMS Module - Creates a key for encrypting data across S3 and Lambda
+module "kms_encryption" {
+  source      = "./modules/kms"
+  tags        = var.tags
+  project     = var.project
+  environment = var.environment
+  region      = var.region
+  kms_vars    = var.kms_settings
+  aliases     = var.kms_aliases
+  key_owners  = var.kms_key_owners
+  key_admins  = var.kms_key_admins
+  key_users   = var.kms_key_users
+}
+
+# API Gateway Module - Creates an endpoint for invoking the Lambda function
+module "translation_api_gateway" {
+  source                 = "./modules/api_gateway"
+  tags                   = var.tags
+  project                = var.project
+  environment            = var.environment
+  region                 = var.region
+  lambda_function_invoke_arn = module.translation_lambda.function_invoke_arn
+  lambda_function_name       = module.translation_lambda.function_name
+  kms_key_id             = module.kms_encryption.key_arn
 }

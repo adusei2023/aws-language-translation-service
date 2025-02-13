@@ -24,26 +24,6 @@ The architecture is designed to be scalable, serverless, and efficient. It inclu
 
 ## **Architecture**
 
-+--------------------------+
-|      API Gateway        |
-+-----------+--------------+
-            |
-+-----------v-------------+
-|      AWS Lambda        |
-+-----------+-------------+
-            |
-+-----------v---------------------+
-|    Amazon S3 - Request Bucket  |
-+--------------------------------+
-            |
-+-----------v---------------------+
-|    AWS Translate Service       |
-+--------------------------------+
-            |
-+-----------v---------------------+
-|    Amazon S3 - Response Bucket |
-+--------------------------------+
-
 ![Architecture Diagram](assets/project_architecture.png)
 
 1. Users upload JSON files containing text to be translated via API Gateway.
@@ -56,19 +36,6 @@ The architecture is designed to be scalable, serverless, and efficient. It inclu
 
 ---
 
-## **Terraform Directory Structure**
-📂 terraform-root/
-│── backend.tfvars          # Defines backend storage settings for Terraform state
-│── main.tf                 # Root module that integrates all Terraform modules
-│── outputs.tf              # Defines Terraform output variables
-│── provider.tf             # Configures the AWS provider
-│── variables.tf            # Defines all Terraform input variables
-│── README.md               # This documentation file
-│── modules/
-│   ├── s3/                 # Module for S3 buckets
-│   ├── lambda/             # Module for AWS Lambda
-│   ├── api_gateway/        # Module for API Gateway
-│   ├── kms/                # Module for KMS encryption
 
 
 ## **Features**
@@ -111,6 +78,7 @@ Follow these steps to deploy the project infrastructure:
 5. Apply the Deployment
    ```bash
    terraform apply -auto-approve
+   ```
 
 6. Retrieve the API Gateway URL
 After deployment, get the API Gateway endpoint:

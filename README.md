@@ -70,19 +70,19 @@ Follow these steps to deploy the project infrastructure:
 3. Validate the Configuration
    ```bash
    terraform validate
-
+```
 4.  Plan the Deployment
    ```bash
    terraform plan
-
+```
 5. Apply the Deployment
    ```bash
    terraform apply -auto-approve
-   
+   ```
 6. Retrieve the API Gateway URL
    ```bash
    terraform output translation_api_gateway_url
-
+```
 
 ## Security Considerations
 - IAM Role Least Privilege: The Lambda function and API Gateway have restricted permissions.

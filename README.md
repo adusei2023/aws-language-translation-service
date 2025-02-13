@@ -66,7 +66,7 @@ Follow these steps to deploy the project infrastructure:
 2. Initialize Terraform
    ```bash
    terraform init -backend-config=backend.tfvars
-
+```
 3. Validate the Configuration
    ```bash
    terraform validate

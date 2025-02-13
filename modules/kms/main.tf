@@ -1,29 +1,26 @@
-# Creates a new AWS Key Management Service (KMS) key for encryption and security.
-resource "aws_kms_key" "project_encryption_key" {
-  description              = var.kms_config["description"]
-  deletion_window_in_days  = var.kms_config["deletion_window_in_days"]
-  enable_key_rotation      = var.kms_config["enable_key_rotation"]
-  key_usage                = var.kms_config["key_usage"]
-  customer_master_key_spec = var.kms_config["customer_master_key_spec"]
+resource "aws_kms_key" "this" {
+  description              = var.kms_vars["description"]
+  deletion_window_in_days  = var.kms_vars["deletion_window_in_days"]
+  enable_key_rotation      = var.kms_vars["enable_key_rotation"]
+  key_usage                = var.kms_vars["key_usage"]
+  customer_master_key_spec = var.kms_vars["customer_master_key_spec"]
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Id      = "project-kms-policy"
+    Id      = "key-default-1"
     Statement = concat(
       [
         {
-          # Grants full control to the AWS root account user.
-          Sid    = "GrantRootFullAccess"
+          Sid    = "EnableIAMUserPermissions"
           Effect = "Allow"
           Principal = {
-            AWS = "arn:aws:iam::${data.aws_caller_identity.current_account.account_id}:root"
+            AWS = "arn:aws:iam::${data.aws_caller_identity.this.account_id}:root"
           }
           Action   = "kms:*"
           Resource = "*"
         },
         {
-          # Allows AWS S3 and CloudWatch Logs services to encrypt and decrypt data using this key.
-          Sid    = "AllowS3AndLogsEncryption"
+          Sid    = "AllowLambdaAndS3Access"
           Effect = "Allow"
           Principal = {
             Service = ["s3.amazonaws.com", "logs.amazonaws.com"]
@@ -37,11 +34,10 @@ resource "aws_kms_key" "project_encryption_key" {
           Resource = "*"
         },
         {
-          # Grants access to IAM roles used within the project.
-          Sid    = "AllowProjectRoles"
+          Sid    = "AllowProject"
           Effect = "Allow"
           Principal = {
-            AWS = "arn:aws:iam::${data.aws_caller_identity.current_account.account_id}:root"
+            AWS = "arn:aws:iam::${data.aws_caller_identity.this.account_id}:root"
           }
           Action = [
             "kms:Encrypt",
@@ -52,16 +48,14 @@ resource "aws_kms_key" "project_encryption_key" {
           Resource = "*"
           Condition = {
             "StringLike" : {
-              "aws:PrincipalArn": "arn:aws:iam::${data.aws_caller_identity.current_account.account_id}:role/${var.project_name}-*"
+              "aws:PrincipalArn": "arn:aws:iam::${data.aws_caller_identity.this.account_id}:role/${var.project}-*"
             }
           }
         }
       ],
-      
-      # Grants full administrative access to key owners.
       length(var.key_owners) > 0 ? [
         {
-          Sid    = "GrantFullAccessToKeyOwners"
+          Sid    = "AllowFullAccessForKeyOwners"
           Effect = "Allow"
           Principal = {
             AWS = var.key_owners
@@ -70,11 +64,9 @@ resource "aws_kms_key" "project_encryption_key" {
           Resource = "*"
         }
       ] : [],
-
-      # Grants administrative permissions to key admins (without encryption/decryption rights).
       length(var.key_admins) > 0 ? [
         {
-          Sid    = "GrantAdminPermissionsToKeyAdmins"
+          Sid    = "AllowAdministrationForKeyAdmins"
           Effect = "Allow"
           Principal = {
             AWS = var.key_admins
@@ -96,11 +88,9 @@ resource "aws_kms_key" "project_encryption_key" {
           Resource = "*"
         }
       ] : [],
-
-      # Grants encryption and decryption permissions to key users.
       length(var.key_users) > 0 ? [
         {
-          Sid    = "GrantEncryptionAccessToKeyUsers"
+          Sid    = "AllowKeyUsageForKeyUsers"
           Effect = "Allow"
           Principal = {
             AWS = var.key_users
@@ -119,16 +109,15 @@ resource "aws_kms_key" "project_encryption_key" {
   })
 
   tags = merge(
-    var.resource_tags,
+    var.tags,
     {
-      Name = "${var.project_name}-${var.deployment_environment}-kms-key"
+      Name = "${var.project}-${var.environment}-KMS-Key"
     }
   )
 }
 
-# Creates an alias for the KMS key to allow easier reference.
-resource "aws_kms_alias" "project_kms_alias" {
-  for_each      = { for alias in var.kms_aliases : alias => alias }
+resource "aws_kms_alias" "this" {
+  for_each      = { for alias in var.aliases : alias => alias }
   name          = each.value
-  target_key_id = aws_kms_key.project_encryption_key.id
+  target_key_id = aws_kms_key.this.id
 }

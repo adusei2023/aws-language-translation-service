@@ -78,16 +78,14 @@ Follow these steps to deploy the project infrastructure:
 5. Apply the Deployment
    ```bash
    terraform apply -auto-approve
-   ```
-
+   
 6. Retrieve the API Gateway URL
-After deployment, get the API Gateway endpoint:
    ```bash
    terraform output translation_api_gateway_url
 
 
 ## Security Considerations
-✅ IAM Role Least Privilege: The Lambda function and API Gateway have restricted permissions.
-✅ S3 Bucket Encryption: All S3 objects are encrypted using AWS KMS.
-✅ API Gateway Authorization: The API is protected via IAM authentication.
-✅ Terraform State Security: State files are stored in an S3 backend with DynamoDB locking
+- IAM Role Least Privilege: The Lambda function and API Gateway have restricted permissions.
+- S3 Bucket Encryption: All S3 objects are encrypted using AWS KMS.
+- API Gateway Authorization: The API is protected via IAM authentication.
+- Terraform State Security: State files are stored in an S3 backend with DynamoDB locking

@@ -63,22 +63,28 @@ Follow these steps to deploy the project infrastructure:
    git clone https://github.com/your-username/language-translation-aws-iac-solution.git
    cd aws-translate-service
 ```
+
 2. Initialize Terraform
    ```bash
    terraform init -backend-config=backend.tfvars
 ```
+
 3. Validate the Configuration
    ```bash
    terraform validate
 ```
+
 4.  Plan the Deployment
+
    ```bash
    terraform plan
 ```
+
 5. Apply the Deployment
    ```bash
    terraform apply -auto-approve
 ```
+
 6. Retrieve the API Gateway URL
    ```bash
    terraform output translation_api_gateway_url

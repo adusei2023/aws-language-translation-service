@@ -13,7 +13,9 @@ terraform {
   }
 
   # Remote backend for storing Terraform state
-  backend "s3" {}
+  backend "s3" {
+    
+  }
 }
 
 # AWS Provider Configuration

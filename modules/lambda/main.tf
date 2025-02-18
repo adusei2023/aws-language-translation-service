@@ -1,21 +1,21 @@
-# Define the AWS Lambda function
-resource "aws_lambda_function" "translate_function" {
+# Creates the AWS Lambda function
+resource "aws_lambda_function" "this" {
   function_name    = var.function_name
-  handler          = var.function_handler
-  kms_key_arn      = var.kms_key_id   # Use KMS for encrypting environment variables and logs
-  memory_size      = 128              # Set Lambda memory size
-  package_type     = "Zip"
-  role             = aws_iam_role.lambda_execution_role.arn  # Attach IAM execution role
-  runtime          = "python3.12"
-  filename         = "${path.module}/lambda_translate.zip"  # Path to the Lambda deployment package
-  source_code_hash = data.archive_file.lambda_package.output_base64sha256  # Ensure Lambda updates only on code changes
+  handler          = var.function_handler  # Specifies the function handler
+  kms_key_arn      = var.kms_key_id        # KMS encryption for environment variables
+  memory_size      = 128                   # Memory allocated to the function
+  package_type     = "Zip"                 # Function code is packaged as a ZIP file
+  role             = aws_iam_role.this.arn  # IAM role assigned to Lambda
+  runtime          = "python3.12"          # Lambda runtime environment
+  filename         = "${path.module}/lambda_translate.zip"  # ZIP file containing Lambda code
+  source_code_hash = data.archive_file.this.output_base64sha256  # Ensures updates are deployed
 
-  # Enable AWS X-Ray tracing for monitoring and debugging
+  # Enables AWS X-Ray tracing for debugging and monitoring
   tracing_config {
     mode = "Active"
   }
 
-  # Define environment variables for S3 buckets
+  # Environment variables passed to the Lambda function
   environment {
     variables = {
       REQUEST_BUCKET  = var.request_bucket
@@ -23,37 +23,35 @@ resource "aws_lambda_function" "translate_function" {
     }
   }
 
-  # Set up logging configuration for CloudWatch
+  # Configures logging for Lambda
   logging_config {
     log_format = "Text"
-    log_group  = aws_cloudwatch_log_group.lambda_log_group.name
+    log_group  = aws_cloudwatch_log_group.this.name
   }
 
-  # Assign tags for better resource tracking
+  # Tags to help with resource identification
   tags = merge(
     var.tags,
     {
-      Name = "${var.project}-${var.environment}-TranslateLambda"
+      Name = "${var.project}-${var.environment}-LambdaFunction"
     }
   )
 
-  # Ensure the log group exists before creating Lambda
   depends_on = [
-    aws_cloudwatch_log_group.lambda_log_group,
+    aws_cloudwatch_log_group.this,
   ]
 }
 
-# Create a CloudWatch Log Group for Lambda logs
-resource "aws_cloudwatch_log_group" "lambda_log_group" {
+# CloudWatch log group for Lambda function logs
+resource "aws_cloudwatch_log_group" "this" {
   name              = "/aws/lambda/${var.function_name}"
-  retention_in_days = 1         # Keep logs for 1 day to minimize costs
-  kms_key_id        = var.kms_key_id  # Encrypt logs using KMS
+  retention_in_days = 1         # Log retention policy (1 day)
+  kms_key_id        = var.kms_key_id  # Encrypts logs using KMS
 
-  # Assign tags for easy resource tracking
   tags = merge(
     var.tags,
     {
-      Name = "${var.project}-${var.environment}-LambdaLogGroup"
+      Name = "${var.project}-${var.environment}-Lambda-LogGroup"
     }
   )
 }

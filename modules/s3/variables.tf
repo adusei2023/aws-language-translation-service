@@ -1,34 +1,34 @@
 variable "bucket_name" {
-  description = "The name of the S3 bucket to create for translation data"
+  description = "The name of the S3 bucket to create"
   type        = string
 }
 
 variable "kms_key_id" {
-  description = "The KMS key ID used for encrypting objects in the S3 bucket"
+  description = "The KMS key ID to use for server-side encryption"
   type        = string
 }
 
 variable "tags" {
-  description = "Additional metadata tags for the S3 bucket"
+  description = "Additional tags for the resource"
   type        = map(string)
 }
 
 variable "project" {
-  description = "The project name associated with this S3 bucket"
+  description = "Project name"
   type        = string
 }
 
 variable "environment" {
-  description = "The deployment environment (e.g., dev, prod, staging)"
+  description = "Environment name"
   type        = string
 }
 
 variable "region" {
-  description = "AWS region where the S3 bucket will be deployed"
+  description = "AWS region to deploy the resources"
   type        = string
 }
 
 variable "bucket_policy_actions" {
-  description = "List of S3 actions allowed in the bucket policy"
+  description = "List of actions to allow in the bucket policy"
   type        = list(string)
 }

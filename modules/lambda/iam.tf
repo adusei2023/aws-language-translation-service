@@ -1,4 +1,5 @@
-resource "aws_iam_role" "lambda_execution_role" {
+# IAM role for the Lambda function with permissions to execute Lambda
+resource "aws_iam_role" "this" {
   name = "${var.project}-${var.environment}-LambdaRole"
 
   assume_role_policy = jsonencode({
@@ -7,7 +8,7 @@ resource "aws_iam_role" "lambda_execution_role" {
       Action = "sts:AssumeRole",
       Effect = "Allow",
       Principal = {
-        Service = "lambda.amazonaws.com"
+        Service = "lambda.amazonaws.com"  # AWS Lambda is allowed to assume this role
       }
     }]
   })
@@ -20,61 +21,63 @@ resource "aws_iam_role" "lambda_execution_role" {
   )
 }
 
-resource "aws_iam_policy" "lambda_policy" {
+# IAM policy defining permissions for the Lambda function
+resource "aws_iam_policy" "this" {
   name = "${var.project}-${var.environment}-LambdaPolicy"
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
       {
-        Sid = "LogPermissions"
+        Sid = "LogPolicies"
         Action = [
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ],
-        Effect   = "Allow",
-        Resource = "arn:aws:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${aws_lambda_function.lambda_function.function_name}:*"
+        Effect   = "Allow"
+        Resource = "arn:aws:logs:${var.region}:${data.aws_caller_identity.this.account_id}:log-group:/aws/lambda/${aws_lambda_function.this.function_name}:*"
       },
       {
-        Sid = "S3Access"
+        Sid = "S3Policies"
         Action = [
           "s3:GetObject",
           "s3:PutObject"
         ],
-        Effect = "Allow",
+        Effect = "Allow"
         Resource = [
-          "${var.request_bucket_arn}/*",
-          "${var.response_bucket_arn}/*",
-          "${var.request_bucket_arn}",
+          "${var.request_bucket_arn}/*",   # Access to objects in request bucket
+          "${var.response_bucket_arn}/*",  # Access to objects in response bucket
+          "${var.request_bucket_arn}",     # Access to the bucket itself
           "${var.response_bucket_arn}",
         ]
       },
       {
-        Sid = "TranslateServiceAccess"
+        Sid = "TranslatePolicies"
         Action = [
           "translate:TranslateText"
         ],
-        Effect   = "Allow",
-        Resource = "*" # Lambda can translate any text
+        Effect   = "Allow"
+        Resource = "*" # Allows Lambda to translate any text
       },
       {
-        Sid = "KMSAccess"
+        Sid = "KMSPolicies"
         Action = [
           "kms:Decrypt",
           "kms:GenerateDataKey"
         ],
-        Effect   = "Allow",
-        Resource = "*" # Lambda can decrypt data keys for encryption
+        Effect   = "Allow"
+        Resource = "*" # Allows Lambda to decrypt data using KMS
       }
     ]
   })
 
   tags = {
-    Name = "${var.project}-${var.environment}-LambdaPolicy"
+    Name = "this-TeamsAlert-lambdaPolicy"
   }
 }
 
-resource "aws_iam_role_policy_attachment" "lambda_policy_attachment" {
-  role       = aws_iam_role.lambda_execution_role.name
-  policy_arn = aws_iam_policy.lambda_policy.arn
+# Attach the IAM policy to the IAM role for Lambda
+resource "aws_iam_role_policy_attachment" "this" {
+  role       = aws_iam_role.this.name
+  policy_arn = aws_iam_policy.this.arn
 }

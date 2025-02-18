@@ -1,7 +1,3 @@
-# ===========================
-#   Terraform Provider
-# ===========================
-
 terraform {
   required_version = ">= 1.10.2"
 
@@ -12,17 +8,12 @@ terraform {
     }
   }
 
-  # Remote backend for storing Terraform state
   backend "s3" {
-    
   }
 }
 
-# AWS Provider Configuration
 provider "aws" {
   region = "eu-west-1"
-
-  # Global default tags for all AWS resources
   default_tags {
     tags = {
       Project     = var.project

@@ -1,43 +1,38 @@
-# ===========================
-#   Global Variables
-# ===========================
-
-# Project name
+# General project settings
 variable "project" {
-  description = "Project name for tagging and organization"
+  description = "Project name for tagging and resource organization"
   type        = string
   default     = "aws-translate"
 }
 
-# Deployment environment (e.g., dev, staging, prod)
 variable "environment" {
-  description = "Deployment environment"
+  description = "Deployment environment (e.g., dev, staging, prod)"
   type        = string
   default     = "dev"
 }
 
-# AWS region for deploying resources
 variable "region" {
-  description = "AWS region"
+  description = "AWS region where resources will be deployed"
   type        = string
   default     = "eu-west-1"
 }
 
-# Common tags for resource tracking
+# Tags for resource identification and tracking
 variable "tags" {
-  description = "Tags for AWS resources"
+  description = "Metadata tags to apply to all resources for better organization"
   type        = map(string)
   default = {
     CreatedBy = "George"
   }
 }
 
-# ===========================
-#   KMS Configuration
-# ===========================
+# ---------------------------------------------------------------------------------------------------------------------
+# KMS CONFIGURATION - MANAGE ENCRYPTION SETTINGS FOR SECURING S3 BUCKETS & OTHER RESOURCES
+# ---------------------------------------------------------------------------------------------------------------------
 
-variable "kms_settings" {
-  type = map(any)
+variable "kms_vars" {
+  description = "Configuration settings for the AWS Key Management Service (KMS) key"
+  type        = map(any)
   default = {
     description              = "Project KMS key"
     deletion_window_in_days  = 30
@@ -47,78 +42,92 @@ variable "kms_settings" {
   }
 }
 
-variable "kms_aliases" {
-  description = "List of KMS key aliases"
+variable "aliases" {
+  description = "List of aliases to assign to the KMS key (e.g., [\"alias/my-key\"])"
   type        = list(string)
   default = [
-    "alias/translate-key"
+    "alias/translate-key",
   ]
 }
 
-variable "kms_key_owners" {
-  description = "IAM ARNs with full control over the KMS key"
+# IAM permissions for KMS key access
+variable "key_owners" {
+  description = "List of IAM principal ARNs that have full control over the KMS key"
   type        = list(string)
   default = [
-    "arn:aws:iam::522986700920:user/crommie"
+    "arn:aws:iam::314146303416:user/Eli_George",
   ]
 }
 
-variable "kms_key_admins" {
-  description = "IAM ARNs allowed to administer the KMS key"
+variable "key_admins" {
+  description = "List of IAM principal ARNs that can administer the key (e.g., modify key settings)"
   type        = list(string)
   default     = []
 }
 
-variable "kms_key_users" {
-  description = "IAM ARNs allowed to use the KMS key for encryption/decryption"
+variable "key_users" {
+  description = "List of IAM principal ARNs that are allowed to use the key for encryption/decryption"
   type        = list(string)
   default     = []
 }
 
-# ===========================
-#   Lambda Configuration
-# ===========================
+# ---------------------------------------------------------------------------------------------------------------------
+# AWS LAMBDA CONFIGURATION - TRANSLATION FUNCTION SETTINGS
+# ---------------------------------------------------------------------------------------------------------------------
 
-variable "lambda_function_name" {
-  description = "Name of the AWS Lambda function"
+variable "function_name" {
+  description = "The name of the AWS Lambda function responsible for translations"
   type        = string
   default     = "translate-function"
 }
 
-variable "lambda_function_handler" {
-  description = "Handler function inside the Lambda script"
+variable "function_handler" {
+  description = "The handler function within the Lambda script (module.function)"
   type        = string
   default     = "lambda_translate.lambda_handler"
 }
 
-# ===========================
-#   S3 Buckets Configuration
-# ===========================
+# ---------------------------------------------------------------------------------------------------------------------
+# S3 BUCKET CONFIGURATION - STORAGE FOR TRANSLATION REQUESTS & RESPONSES
+# ---------------------------------------------------------------------------------------------------------------------
 
-variable "translation_request_bucket" {
-  description = "S3 bucket for storing translation request files"
+variable "request_bucket" {
+  description = "The S3 bucket for storing translation request payloads"
   type        = string
-  default     = "translation-requests-storage"
+  default     = "request-bucket-store007"
 }
 
-variable "translation_response_bucket" {
-  description = "S3 bucket for storing translated response files"
+variable "response_bucket" {
+  description = "The S3 bucket for storing translation responses and logs"
   type        = string
-  default     = "translation-responses-storage"
+  default     = "response-bucket-store007"
 }
 
-# ===========================
-#   S3 Bucket Policies
-# ===========================
-
+# Permissions for accessing S3 buckets
 variable "request_bucket_policy_actions" {
-  description = "Allowed actions in the request bucket policy"
+  description = "List of allowed actions for the translation request bucket"
   type        = list(string)
   default     = ["s3:PutObject"]
 }
 
-variable "response_bucket_policy_actions" {
-  description = "Allowed actions in the response bucket policy"
+variable "reponse_bucket_policy_actions" {
+  description = "List of allowed actions for the translation response bucket"
   type        = list(string)
   default     = ["s3:PutObject", "s3:GetObject"]
+}
+
+# ---------------------------------------------------------------------------------------------------------------------
+# API GATEWAY CONFIGURATION - EXPOSE LAMBDA FUNCTION VIA HTTP REQUESTS
+# ---------------------------------------------------------------------------------------------------------------------
+
+variable "api_gateway_method" {
+  description = "The HTTP method to be used for API Gateway (e.g., GET, POST)"
+  type        = string
+  default     = "POST"
+}
+
+variable "api_gateway_route" {
+  description = "The route path for the API Gateway endpoint"
+  type        = string
+  default     = "/translate"
 }

@@ -58,37 +58,41 @@ The architecture is designed to be scalable, serverless, and efficient. It inclu
 ## **Deployment**
 Follow these steps to deploy the project infrastructure:
 
-1. Clone the repository:
+1. **Clone the repository**:
+
    ```bash
    git clone https://github.com/your-username/language-translation-aws-iac-solution.git
    cd aws-translate-service
-```
+   ```
 
-2. Initialize Terraform
+2. **Initialize Terraform**
+
    ```bash
    terraform init -backend-config=backend.tfvars
-```
+   ```
 
-3. Validate the Configuration
+3. **Validate the Configuration**
+
    ```bash
    terraform validate
-```
+   ```
 
-4.  Plan the Deployment
+4. **Plan the Deployment**
 
    ```bash
    terraform plan
-```
+   ```
 
-5. Apply the Deployment
+5. **Apply the Deployment**
+
    ```bash
    terraform apply -auto-approve
-```
+   ```
 
-6. Retrieve the API Gateway URL
+6. **Retrieve the API Gateway URL**
    ```bash
    terraform output translation_api_gateway_url
-```
+   ```
 
 ## Security Considerations
 - IAM Role Least Privilege: The Lambda function and API Gateway have restricted permissions.

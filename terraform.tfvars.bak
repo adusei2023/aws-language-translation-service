@@ -1,0 +1,4 @@
+aws_region = "us-east-1"
+environment = "production"
+request_bucket_name = "request-bucket-samadbo-1750850387-6652"
+response_bucket_name = "response-bucket-samadbo-1750850387-6652"

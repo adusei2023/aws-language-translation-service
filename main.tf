@@ -25,7 +25,7 @@ module "response_bucket" {
   project               = var.project                        # Project name for grouping resources
   environment           = var.environment                    # Environment (e.g., dev, staging, prod)
   region                = var.region                         # AWS region where the bucket will be deployed
-  bucket_policy_actions = var.reponse_bucket_policy_actions  # List of allowed actions for bucket policy
+  bucket_policy_actions = var.response_bucket_policy_actions  # Fixed typo: was "reponse_bucket_policy_actions"
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -38,18 +38,20 @@ module "response_bucket" {
 # ---------------------------------------------------------------------------------------------------------------------
 
 module "lambda" {
-  source              = "./modules/lambda"       # Path to the Lambda module
-  function_name       = var.function_name        # Name of the Lambda function
-  function_handler    = var.function_handler     # Handler function inside the Lambda script
-  request_bucket      = module.request_bucket.bucket_name   # Pass the request bucket name to Lambda
-  response_bucket     = module.response_bucket.bucket_name  # Pass the response bucket name to Lambda
-  request_bucket_arn  = module.request_bucket.bucket_arn    # ARN of the request bucket
-  response_bucket_arn = module.response_bucket.bucket_arn   # ARN of the response bucket
-  tags                = var.tags                 # Tags for resource identification
-  project             = var.project              # Project name for grouping resources
-  environment         = var.environment          # Environment (e.g., dev, staging, prod)
-  region              = var.region               # AWS region where the Lambda function is deployed
-  kms_key_id          = module.kms_key.key_arn   # KMS encryption key for secure storage
+  source               = "./modules/lambda"       # Path to the Lambda module
+  function_name        = var.function_name        # Name of the Lambda function
+  function_handler     = var.function_handler     # Handler function inside the Lambda script
+  request_bucket_name  = var.request_bucket       # Bucket name for requests
+  response_bucket_name = var.response_bucket      # Bucket name for responses
+  request_bucket       = var.request_bucket       # Add this line
+  response_bucket      = var.response_bucket      # Add this line
+  request_bucket_arn   = module.request_bucket.bucket_arn    # ARN of the request bucket
+  response_bucket_arn  = module.response_bucket.bucket_arn   # ARN of the response bucket
+  tags                 = var.tags                 # Tags for resource identification
+  project              = var.project              # Project name for grouping resources
+  environment          = var.environment          # Environment (e.g., dev, staging, prod)
+  region               = var.region               # AWS region where the Lambda function is deployed
+  kms_key_id           = module.kms_key.key_arn   # KMS encryption key for secure storage
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -92,4 +94,8 @@ module "api_gateway" {
   kms_key_id             = module.kms_key.key_arn             # KMS encryption key for API security
   api_gateway_method     = var.api_gateway_method            # HTTP method (e.g., POST)
   api_gateway_route      = var.api_gateway_route             # API route (e.g., "/translate")
+}
+
+terraform {
+  backend "s3" {}
 }

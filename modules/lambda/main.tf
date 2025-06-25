@@ -18,8 +18,8 @@ resource "aws_lambda_function" "this" {
   # Environment variables passed to the Lambda function
   environment {
     variables = {
-      REQUEST_BUCKET  = var.request_bucket
-      RESPONSE_BUCKET = var.response_bucket
+      REQUEST_BUCKET  = var.request_bucket    # Changed from request_bucket_name
+      RESPONSE_BUCKET = var.response_bucket   # Changed from response_bucket_name
     }
   }
 

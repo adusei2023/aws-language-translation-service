@@ -1,101 +1,179 @@
-# Automated Language Translation Service
+# AWS Language Translation Service
 
-This Terraform project provisions an AWS-based translation service that enables automated language translations using AWS Lambda and Amazon Translate. The infrastructure is designed to be secure, scalable, and modular, following Infrastructure-as-Code (IaC) best practices.
+This project deploys a serverless language translation service on AWS using Terraform Infrastructure as Code (IaC).
 
-The project consists of the following key AWS services:
+## Architecture
 
-Amazon S3: Stores incoming translation requests and the translated responses.
-AWS Lambda: Executes the translation logic using AWS Translate.
-Amazon API Gateway: Provides an HTTP endpoint for users to submit text for translation.
-AWS Key Management Service (KMS): Ensures encryption of sensitive data across all resources.
+- **Lambda Function**: Processes translation requests using AWS Translate
+- **API Gateway**: REST API endpoint for translation requests  
+- **S3 Buckets**: Storage for requests and responses
+- **KMS**: Encryption for data at rest
+- **CloudWatch**: Logging and monitoring
 
----
+## Prerequisites
 
-## **Project Overview**
-The architecture is designed to be scalable, serverless, and efficient. It includes:
-1. **API Gateway**: Provides a secure endpoint for users to upload translation requests and retrieve results.
-2. **Lambda**: Executes the translation logic using a Python script integrated with **Boto3**.
-3. **S3**: 
-   - Stores translation requests and responses.
-   - Serves as a logging mechanism for tracking input and output files.
-4. **AWS Translate**: Performs the language translation.
+- AWS CLI configured with appropriate permissions
+- Terraform >= 1.0
+- Python 3.8+
 
----
+## Deployment
 
-## **Architecture**
-
-![Architecture Diagram](./assets/Architecture_diagram.png)
-
-1. Users upload JSON files containing text to be translated via API Gateway.
-2. The request is routed to a Lambda function.
-3. The Lambda function:
-   - Fetches the input JSON file from the S3 bucket.
-   - Processes it using AWS Translate.
-   - Stores the translated output back in the designated S3 bucket.
-4. API Gateway provides the endpoint for interacting with the service.
-
----
-
-
-
-## **Features**
-- **Serverless Architecture**: Fully managed by AWS services, ensuring high availability and scalability.
-- **Automated Language Translation**: Supports multiple languages using AWS Translate.
-- **Secure Data Storage**: Uses IAM roles and policies to secure S3 buckets and other resources.
-
----
-
-## **Prerequisites**
-1. AWS account with access to:
-   - **API Gateway**
-   - **Lambda**
-   - **S3**
-   - **AWS Translate**
-2. Terraform installed on your local machine.
-
----
-
-## **Deployment**
-Follow these steps to deploy the project infrastructure:
-
-1. **Clone the repository**:
-
+1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/language-translation-aws-iac-solution.git
-   cd aws-translate-service
+   git clone https://github.com/YOUR_USERNAME/aws-language-translation-service.git
+   cd aws-language-translation-service
    ```
-
-2. **Initialize Terraform**
-
+2. Create a `terraform.tfvars` file for variable configuration. Refer to `terraform.tfvars.example` for guidance.
+   ```bash
+   cp terraform.tfvars.example terraform.tfvars
+   # Edit terraform.tfvars with your specific values
+   ```
+3. Initialize Terraform:
    ```bash
    terraform init -backend-config=backend.tfvars
    ```
-
-3. **Validate the Configuration**
-
-   ```bash
-   terraform validate
-   ```
-
-4. **Plan the Deployment**
-
+4. Review the execution plan:
    ```bash
    terraform plan
    ```
-
-5. **Apply the Deployment**
-
+5. Apply the changes:
    ```bash
-   terraform apply -auto-approve
+   terraform apply
    ```
+6. Note the API Gateway endpoint URL from the output.
 
-6. **Retrieve the API Gateway URL**
-   ```bash
-   terraform output translation_api_gateway_url
-   ```
+
+
+## Usage
+
+- Send a POST request to the API Gateway endpoint with a JSON body containing the text and target language.
+- The Lambda function will process the request, translate the text, and store the result in the specified S3 bucket.
+- Retrieve the translated text from the S3 bucket or via the API Gateway GET endpoint.
+
+## Cleanup
+
+To avoid ongoing charges to your AWS account, delete the resources provisioned by Terraform:
+
+```bash
+terraform destroy
+```
 
 ## Security Considerations
+
 - IAM Role Least Privilege: The Lambda function and API Gateway have restricted permissions.
 - S3 Bucket Encryption: All S3 objects are encrypted using AWS KMS.
 - API Gateway Authorization: The API is protected via IAM authentication.
-- Terraform State Security: State files are stored in an S3 backend with DynamoDB locking
+- Terraform State Security: State files are stored in an S3 backend with DynamoDB locking.
+- Public Access Blocking: S3 buckets have public access blocked
+
+## Troubleshooting
+
+- Check CloudWatch logs for Lambda function errors.
+- Ensure the API Gateway is correctly integrated with the Lambda function.
+- Verify S3 bucket policies and permissions.
+- Validate AWS Translate service limits and supported language pairs.
+- Check IAM permissions for Lambda execution role.
+
+## Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request for any enhancements or bug fixes.
+
+
+
+Usage
+Send POST requests to the API Gateway endpoint:
+
+{
+  "source_language": "en",
+  "target_language": "es",
+  "text": "Hello world. This is a test translation."
+}
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+AWS Language Translation Service
+
+├── main.tf                 # Main Terraform configuration
+├── variables.tf           # Variable definitions
+├── outputs.tf            # Output definitions
+├── terraform.tfvars      # Variable values (not in repo)
+├── backend.tfvars        # Backend config (not in repo)
+├── modules/
+│   ├── lambda/           # Lambda function module
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   ├── iam.tf
+│   │   ├── data.tf
+│   │   └── lambda_translate.py
+│   ├── s3/              # S3 buckets module
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   └── data.tf
+│   ├── kms/             # KMS encryption module
+│   └── api_gateway/     # API Gateway module
+└── README.md
+
+
+Testing
+Test the translation service using:
+
+AWS Lambda Console (Test button)
+API Gateway Test Console
+cURL commands
+Postman or other API testing tools
+Security Considerations
+IAM Role Least Privilege: The Lambda function and API Gateway have restricted permissions
+S3 Bucket Encryption: All S3 objects are encrypted using AWS KMS
+API Gateway Authorization: The API is protected via IAM authentication
+Terraform State Security: State files are stored in an S3 backend with DynamoDB locking
+Public Access Blocking: S3 buckets have public access blocked
+
+Cost Optimization
+Lambda function uses minimal memory allocation
+S3 lifecycle policies for log retention
+Pay-per-use pricing model
+KMS key rotation enabled
+Cleanup
+To avoid ongoing charges to your AWS account, delete the resources provisioned by Terraform:
+
+terraform destroy
+
+
+Troubleshooting
+
+Check CloudWatch logs for Lambda function errors
+Ensure the API Gateway is correctly integrated with the Lambda function
+Verify S3 bucket policies and permissions
+Validate AWS Translate service limits and supported language pairs
+Check IAM permissions for Lambda execution role
+
+Contributing
+Contributions are welcome! Please open an issue or submit a pull request for any enhancements or bug fixes.
+
+CloudFormation Group Members
+Samuel Adusei Boateng - Project Lead & AWS Infrastructure Developer
+LinkedIn: https://www.linkedin.com/in/samueladuseiboateng/
+Role: Terraform Infrastructure, Lambda Development, API Gateway Configuration
+Note: Add additional members here
+
+## Commit and Push the Changes
+
+```bash
+# Add the updated README
+git add README.md
+
+# Commit the changes
+git commit -m "Update README with comprehensive documentation and CloudFormation group information
+
+- Added detailed project structure and usage examples
+- Included CloudFormation group members section
+- Enhanced security considerations and troubleshooting guide
+- Added supported languages and testing instructions
+- Included author attribution and acknowledgments"
+
+# Push to GitHub
+git push origin master
+```

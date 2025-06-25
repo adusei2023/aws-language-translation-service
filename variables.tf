@@ -131,3 +131,29 @@ variable "api_gateway_route" {
   type        = string
   default     = "/translate"
 }
+
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
+  default     = "us-east-1"
+}
+variable "request_bucket_name" {
+  description = "Name of the S3 bucket for requests"
+  type        = string
+  default     = "request-bucket-1750850081-unique"
+}
+
+variable "response_bucket_name" {
+  description = "Name of the S3 bucket for responses"
+  type        = string
+  default     = "response-bucket-1750850081-unique"
+}
+variable "response_bucket_policy_actions" {
+
+  description = "List of allowed actions for response bucket policy"
+
+  type        = list(string)
+
+  default     = ["s3:GetObject", "s3:PutObject", "s3:ListBucket"]
+
+}

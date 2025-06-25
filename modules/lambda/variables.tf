@@ -12,12 +12,12 @@ variable "function_handler" {
 
 # Request and Response S3 buckets
 variable "request_bucket" {
-  description = "The name of the S3 bucket where translation requests are stored"
+  description = "Name of the S3 bucket for incoming translation requests"
   type        = string
 }
 
 variable "response_bucket" {
-  description = "The name of the S3 bucket where translation responses are stored"
+  description = "Name of the S3 bucket for translation responses"
   type        = string
 }
 
@@ -58,5 +58,15 @@ variable "region" {
 # KMS key ID for encryption
 variable "kms_key_id" {
   description = "The KMS key ID to use for server-side encryption"
+  type        = string
+}
+
+variable "request_bucket_name" {
+  description = "Name of the S3 bucket for incoming translation requests"
+  type        = string
+}
+
+variable "response_bucket_name" {
+  description = "Name of the S3 bucket for translation responses"
   type        = string
 }

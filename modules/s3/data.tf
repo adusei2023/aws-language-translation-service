@@ -5,13 +5,45 @@
 # ---------------------------------------------------------------------------------------------------------------------
 
 data "aws_iam_policy_document" "this" {
+  # Statement for bucket-level actions (ListBucket)
   statement {
-    actions   = var.bucket_policy_actions # Allowed actions (e.g., "s3:PutObject", "s3:GetObject")
-    resources = ["${aws_s3_bucket.this.arn}/*"] # Grant access to all objects in the bucket
-
+    sid    = "AllowListBucket"
+    effect = "Allow"
+    
     principals {
-      type        = "Service"
-      identifiers = ["lambda.amazonaws.com"] # Restrict access to AWS Lambda only
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
     }
+    
+    actions = [
+      "s3:ListBucket"
+    ]
+    
+    resources = [
+      "arn:aws:s3:::${var.bucket_name}"
+    ]
+  }
+  
+  # Statement for object-level actions (GetObject, PutObject)
+  statement {
+    sid    = "AllowObjectAccess"
+    effect = "Allow"
+    
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+    
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject"
+    ]
+    
+    resources = [
+      "arn:aws:s3:::${var.bucket_name}/*"
+    ]
   }
 }
+
+# Get current AWS account ID
+data "aws_caller_identity" "current" {}

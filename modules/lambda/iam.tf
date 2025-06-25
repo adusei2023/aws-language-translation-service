@@ -35,7 +35,7 @@ resource "aws_iam_policy" "this" {
           "logs:PutLogEvents"
         ],
         Effect   = "Allow"
-        Resource = "arn:aws:logs:${var.region}:${data.aws_caller_identity.this.account_id}:log-group:/aws/lambda/${aws_lambda_function.this.function_name}:*"
+        Resource = "arn:aws:logs:${var.region}:${data.aws_caller_identity.this.account_id}:log-group:/aws/lambda/*"
       },
       {
         Sid = "S3Policies"

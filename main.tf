@@ -1,101 +1,114 @@
 # ---------------------------------------------------------------------------------------------------------------------
-# S3 BUCKETS - REQUEST & RESPONSE STORAGE
-# These modules create two Amazon S3 buckets:
-# 1. `request_bucket`: Stores original translation requests.
-# 2. `response_bucket`: Stores translated responses and logs.
-# Both buckets are encrypted using AWS KMS for security.
+# TERRAFORM CONFIGURATION
 # ---------------------------------------------------------------------------------------------------------------------
+terraform {
+  required_version = ">= 1.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.0"
+    }
+  }
+}
 
+# ---------------------------------------------------------------------------------------------------------------------
+# AWS PROVIDER CONFIGURATION - US-EAST-1
+# ---------------------------------------------------------------------------------------------------------------------
+provider "aws" {
+  region = "us-east-1"
+}
+
+# ---------------------------------------------------------------------------------------------------------------------
+# KMS KEY MODULE
+# ---------------------------------------------------------------------------------------------------------------------
+module "kms_key" {
+  source      = "./modules/kms"
+  project     = var.project
+  environment = var.environment
+  tags        = var.tags
+  region      = "us-east-1"
+  key_users   = ["arn:aws:iam::061039790475:role/aws-translate-production-LambdaRole"]
+  key_owners  = ["arn:aws:iam::061039790475:root"]
+  key_admins  = ["arn:aws:iam::061039790475:root"]
+  aliases     = ["alias/${var.project}-key"]
+  kms_vars = {
+    description = "KMS key for language translation service"
+    deletion_window_in_days = 7
+    enable_key_rotation = true
+    key_usage = "ENCRYPT_DECRYPT"
+    customer_master_key_spec = "SYMMETRIC_DEFAULT"
+  }
+}
+
+# ---------------------------------------------------------------------------------------------------------------------
+# S3 BUCKETS
+# ---------------------------------------------------------------------------------------------------------------------
 module "request_bucket" {
-  source                = "./modules/s3"                     # Path to the S3 module
-  bucket_name           = var.request_bucket                # Name of the request bucket
-  kms_key_id            = module.kms_key.key_arn            # KMS encryption key for bucket encryption
-  tags                  = var.tags                          # Tags for resource identification
-  project               = var.project                       # Project name for grouping resources
-  environment           = var.environment                   # Environment (e.g., dev, staging, prod)
-  region                = var.region                        # AWS region where the bucket will be deployed
-  bucket_policy_actions = var.request_bucket_policy_actions # List of allowed actions for bucket policy
+  source                = "./modules/s3"
+  bucket_name           = var.request_bucket
+  kms_key_id            = module.kms_key.key_arn
+  tags                  = var.tags
+  project               = var.project
+  environment           = var.environment
+  region                = "us-east-1"
+  bucket_policy_actions = var.request_bucket_policy_actions
 }
 
 module "response_bucket" {
-  source                = "./modules/s3"                     # Path to the S3 module
-  bucket_name           = var.response_bucket                # Name of the response bucket
-  kms_key_id            = module.kms_key.key_arn             # KMS encryption key for bucket encryption
-  tags                  = var.tags                           # Tags for resource identification
-  project               = var.project                        # Project name for grouping resources
-  environment           = var.environment                    # Environment (e.g., dev, staging, prod)
-  region                = var.region                         # AWS region where the bucket will be deployed
-  bucket_policy_actions = var.response_bucket_policy_actions  # Fixed typo: was "reponse_bucket_policy_actions"
+  source                = "./modules/s3"
+  bucket_name           = var.response_bucket
+  kms_key_id            = module.kms_key.key_arn
+  tags                  = var.tags
+  project               = var.project
+  environment           = var.environment
+  region                = "us-east-1"
+  bucket_policy_actions = var.response_bucket_policy_actions
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
-# AWS LAMBDA FUNCTION - TRANSLATION PROCESSOR
-# This module deploys an AWS Lambda function that:
-# - Reads text input from API Gateway.
-# - Translates text using AWS Translate.
-# - Saves translation requests to the "requests" bucket.
-# - Saves translation results and logs to the "responses" bucket.
+# LAMBDA FUNCTION
 # ---------------------------------------------------------------------------------------------------------------------
-
 module "lambda" {
-  source               = "./modules/lambda"       # Path to the Lambda module
-  function_name        = var.function_name        # Name of the Lambda function
-  function_handler     = var.function_handler     # Handler function inside the Lambda script
-  request_bucket_name  = var.request_bucket       # Bucket name for requests
-  response_bucket_name = var.response_bucket      # Bucket name for responses
-  request_bucket       = var.request_bucket       # Add this line
-  response_bucket      = var.response_bucket      # Add this line
-  request_bucket_arn   = module.request_bucket.bucket_arn    # ARN of the request bucket
-  response_bucket_arn  = module.response_bucket.bucket_arn   # ARN of the response bucket
-  tags                 = var.tags                 # Tags for resource identification
-  project              = var.project              # Project name for grouping resources
-  environment          = var.environment          # Environment (e.g., dev, staging, prod)
-  region               = var.region               # AWS region where the Lambda function is deployed
-  kms_key_id           = module.kms_key.key_arn   # KMS encryption key for secure storage
+  source                = "./modules/lambda"
+  function_name         = "translation-lambda"
+  kms_key_id            = module.kms_key.key_arn
+  tags                  = var.tags
+  project               = var.project
+  environment           = var.environment
+  region                = "us-east-1"
+  function_handler      = "index.handler"
+  request_bucket        = module.request_bucket.bucket_name
+  request_bucket_name   = module.request_bucket.bucket_name
+  request_bucket_arn    = module.request_bucket.bucket_arn
+  response_bucket       = module.response_bucket.bucket_name
+  response_bucket_name  = module.response_bucket.bucket_name
+  response_bucket_arn   = module.response_bucket.bucket_arn
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
-# AWS KMS - KEY MANAGEMENT SERVICE
-# This module creates a KMS key to:
-# - Encrypt S3 bucket data at rest.
-# - Provide secure key management and access control.
-# - Allow defined users and services to use the encryption key.
+# API GATEWAY
 # ---------------------------------------------------------------------------------------------------------------------
-
-module "kms_key" {
-  source      = "./modules/kms"      # Path to the KMS module
-  tags        = var.tags             # Tags for resource identification
-  project     = var.project          # Project name for grouping resources
-  environment = var.environment      # Environment (e.g., dev, staging, prod)
-  region      = var.region           # AWS region where the key is deployed
-  kms_vars    = var.kms_vars         # KMS-specific configuration variables
-  aliases     = var.aliases          # Aliases for easier key management
-  key_owners  = var.key_owners       # Users or roles with full key management rights
-  key_admins  = var.key_admins       # Users or roles with administrative access
-  key_users   = var.key_users        # Users or roles with encryption and decryption permissions
-}
-
-# ---------------------------------------------------------------------------------------------------------------------
-# API GATEWAY - PUBLIC ENDPOINT FOR TRANSLATION REQUESTS
-# This module sets up an API Gateway to:
-# - Expose the Lambda function as a publicly accessible HTTP endpoint.
-# - Route incoming translation requests to Lambda.
-# - Secure the endpoint using KMS.
-# ---------------------------------------------------------------------------------------------------------------------
-
 module "api_gateway" {
-  source                 = "./modules/api_gateway"         # Path to the API Gateway module
-  tags                   = var.tags                        # Tags for resource identification
-  project                = var.project                     # Project name for grouping resources
-  environment            = var.environment                 # Environment (e.g., dev, staging, prod)
-  region                 = var.region                      # AWS region where API Gateway is deployed
-  lambaFunctionInvokeArn = module.lambda.function_invoke_arn  # ARN of the Lambda function for API invocation
-  lambdaFunctionName     = module.lambda.function_name        # Name of the Lambda function
-  kms_key_id             = module.kms_key.key_arn             # KMS encryption key for API security
-  api_gateway_method     = var.api_gateway_method            # HTTP method (e.g., POST)
-  api_gateway_route      = var.api_gateway_route             # API route (e.g., "/translate")
+  source                  = "./modules/api_gateway"
+  project                 = var.project
+  environment             = var.environment
+  region                  = "us-east-1"
+  tags                    = var.tags
+  kms_key_id              = module.kms_key.key_arn
+  api_gateway_route       = "/translate"
+  api_gateway_method      = "POST"
+  lambdaFunctionName      = module.lambda.function_name
+  lambaFunctionInvokeArn  = module.lambda.lambda_invoke_arn
 }
 
-terraform {
-  backend "s3" {}
+# ---------------------------------------------------------------------------------------------------------------------
+# FRONTEND
+# ---------------------------------------------------------------------------------------------------------------------
+module "frontend" {
+  source           = "./modules/frontend"
+  bucket_name      = "${var.project}-frontend-${var.environment}"
+  project          = var.project
+  environment      = var.environment
+  api_gateway_url  = module.api_gateway.api_gateway_endpoint
+  tags             = var.tags
 }

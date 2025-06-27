@@ -1,7 +1,7 @@
 # Creates the AWS Lambda function
 resource "aws_lambda_function" "this" {
   function_name    = var.function_name
-  handler          = var.function_handler  # Specifies the function handler
+  handler = "lambda_translate.lambda_handler"
   kms_key_arn      = var.kms_key_id        # KMS encryption for environment variables
   memory_size      = 128                   # Memory allocated to the function
   package_type     = "Zip"                 # Function code is packaged as a ZIP file

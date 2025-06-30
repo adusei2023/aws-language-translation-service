@@ -422,6 +422,12 @@ terraform plan
 - Role: Terraform Infrastructure, Lambda Development, API Gateway Configuration, Frontend Development
 - Contributions: Complete architecture design and implementation
 
+
+**Bethel Arhenefowa Odoom** – *Team Member – Language Translation Service*  
+- LinkedIn: www.linkedin.com/in/bethel-odoom
+- Role: Language Translation Model Integration, Backend Support, API Testing, Documentation  
+- Contributions: Integrated language translation functionalities into the backend services, ensured seamless API interactions, and contributed to system documentation and feature testing.
+
 *Additional team members can be added here*
 
 ## 📝 License

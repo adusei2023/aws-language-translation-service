@@ -1,2 +1,0 @@
-# Look for the handler line and update it to:
-handler = "lambda_translate.lambda_handler"

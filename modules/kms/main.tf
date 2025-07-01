@@ -48,7 +48,7 @@ resource "aws_kms_key" "this" {
           Resource = "*"
           Condition = {
             "StringLike" : {
-              "aws:PrincipalArn": "arn:aws:iam::${data.aws_caller_identity.this.account_id}:role/${var.project}-*"
+              "aws:PrincipalArn" : "arn:aws:iam::${data.aws_caller_identity.this.account_id}:role/${var.project}-*"
             }
           }
         }

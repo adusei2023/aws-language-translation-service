@@ -8,7 +8,7 @@ resource "aws_iam_role" "this" {
       Action = "sts:AssumeRole",
       Effect = "Allow",
       Principal = {
-        Service = "lambda.amazonaws.com"  # AWS Lambda is allowed to assume this role
+        Service = "lambda.amazonaws.com" # AWS Lambda is allowed to assume this role
       }
     }]
   })
@@ -45,9 +45,9 @@ resource "aws_iam_policy" "this" {
         ],
         Effect = "Allow"
         Resource = [
-          "${var.request_bucket_arn}/*",   # Access to objects in request bucket
-          "${var.response_bucket_arn}/*",  # Access to objects in response bucket
-          "${var.request_bucket_arn}",     # Access to the bucket itself
+          "${var.request_bucket_arn}/*",  # Access to objects in request bucket
+          "${var.response_bucket_arn}/*", # Access to objects in response bucket
+          "${var.request_bucket_arn}",    # Access to the bucket itself
           "${var.response_bucket_arn}",
         ]
       },

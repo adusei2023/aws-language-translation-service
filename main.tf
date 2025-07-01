@@ -32,10 +32,10 @@ module "kms_key" {
   key_admins  = ["arn:aws:iam::061039790475:root"]
   aliases     = ["alias/${var.project}-key"]
   kms_vars = {
-    description = "KMS key for language translation service"
-    deletion_window_in_days = 7
-    enable_key_rotation = true
-    key_usage = "ENCRYPT_DECRYPT"
+    description              = "KMS key for language translation service"
+    deletion_window_in_days  = 7
+    enable_key_rotation      = true
+    key_usage                = "ENCRYPT_DECRYPT"
     customer_master_key_spec = "SYMMETRIC_DEFAULT"
   }
 }
@@ -69,20 +69,20 @@ module "response_bucket" {
 # LAMBDA FUNCTION
 # ---------------------------------------------------------------------------------------------------------------------
 module "lambda" {
-  source                = "./modules/lambda"
-  function_name         = "translation-lambda"
-  kms_key_id            = module.kms_key.key_arn
-  tags                  = var.tags
-  project               = var.project
-  environment           = var.environment
-  region                = "us-east-1"
-  function_handler      = "index.handler"
-  request_bucket        = module.request_bucket.bucket_name
-  request_bucket_name   = module.request_bucket.bucket_name
-  request_bucket_arn    = module.request_bucket.bucket_arn
-  response_bucket       = module.response_bucket.bucket_name
-  response_bucket_name  = module.response_bucket.bucket_name
-  response_bucket_arn   = module.response_bucket.bucket_arn
+  source               = "./modules/lambda"
+  function_name        = "translation-lambda"
+  kms_key_id           = module.kms_key.key_arn
+  tags                 = var.tags
+  project              = var.project
+  environment          = var.environment
+  region               = "us-east-1"
+  function_handler     = "lambda_translate.lambda_handler"
+  request_bucket       = module.request_bucket.bucket_name
+  request_bucket_name  = module.request_bucket.bucket_name
+  request_bucket_arn   = module.request_bucket.bucket_arn
+  response_bucket      = module.response_bucket.bucket_name
+  response_bucket_name = module.response_bucket.bucket_name
+  response_bucket_arn  = module.response_bucket.bucket_arn
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -98,17 +98,17 @@ module "api_gateway" {
   api_gateway_route       = "/translate"
   api_gateway_method      = "POST"
   lambdaFunctionName      = module.lambda.function_name
-  lambaFunctionInvokeArn  = module.lambda.lambda_invoke_arn
+  lambdaFunctionInvokeArn = module.lambda.lambda_invoke_arn
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
 # FRONTEND
 # ---------------------------------------------------------------------------------------------------------------------
 module "frontend" {
-  source           = "./modules/frontend"
-  bucket_name      = "${var.project}-frontend-${var.environment}"
-  project          = var.project
-  environment      = var.environment
-  api_gateway_url  = module.api_gateway.api_gateway_endpoint
-  tags             = var.tags
+  source          = "./modules/frontend"
+  bucket_name     = "${var.project}-frontend-${var.environment}"
+  project         = var.project
+  environment     = var.environment
+  api_gateway_url = module.api_gateway.api_gateway_endpoint
+  tags            = var.tags
 }

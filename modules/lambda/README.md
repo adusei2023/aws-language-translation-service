@@ -1,170 +1,125 @@
-# 🌐 AWS Translation Service
+# ⚡ Lambda Translation Module
 
-A serverless language translation service built with AWS Lambda, API Gateway, and S3.
-
-## ✨ Features
-
-- **Multi-language Translation**: Support for English, Spanish, French, German, Chinese, Japanese, Korean, Portuguese, Italian, and Russian
-- **Serverless Architecture**: Built on AWS Lambda for scalability and cost-efficiency
-- **RESTful API**: API Gateway with CORS support for web applications
-- **Web Interface**: Responsive frontend hosted on S3
-- **Security**: KMS encryption and IAM role-based access control
-- **Monitoring**: CloudWatch logging and X-Ray tracing
+## Overview
+This module creates an AWS Lambda function that processes translation requests using AWS Translate service. The function handles HTTP requests from API Gateway, translates text between supported languages, and stores request/response data in S3 buckets.
 
 ## 🏗️ Architecture
+- **Runtime**: Python 3.12
+- **Memory**: 128 MB (cost-optimized)
+- **Handler**: `lambda_translate.lambda_handler`
+- **Integration**: API Gateway proxy integration
+- **Storage**: S3 buckets for request/response logging
+- **Encryption**: KMS encryption for environment variables
+- **Monitoring**: CloudWatch Logs and X-Ray tracing
 
-```mermaid
-graph TD;
-    A[Client] -->|HTTPS Request| B(API Gateway);
-    B -->|Lambda Proxy| C[AWS Lambda];
-    C -->|Translation Request| D[AWS Translate];
-    C -->|S3 Upload| E[S3 Bucket];
-    C -->|KMS Encrypt| F[KMS];
-    C -->|Log| G[CloudWatch Logs];
-    C -->|Trace| H[X-Ray];
-    D -->|Translation Result| C;
-    E -->|Stored Object| C;
-    F -->|Encrypted Data| C;
-    G -->|Log Data| C;
-    H -->|Trace Data| C;
-    C -->|Response| B;
-    B -->|HTTPS Response| A;
-```
+## 📦 Resources Created
+- `aws_lambda_function` - Main translation function
+- `aws_iam_role` - Lambda execution role
+- `aws_iam_role_policy_attachment` - Basic execution policy
+- `aws_iam_policy` - Custom policy for S3 and Translate access
+- `aws_cloudwatch_log_group` - Function logs with KMS encryption
+- `data.archive_file` - ZIP package of function code
 
-## 🚀 Getting Started
+## 🌍 Supported Languages
+- English (en) ↔ Spanish (es)
+- English (en) ↔ French (fr)
+- English (en) ↔ German (de)
+- English (en) ↔ Chinese (zh)
+- English (en) ↔ Japanese (ja)
+- English (en) ↔ Korean (ko)
+- English (en) ↔ Portuguese (pt)
+- English (en) ↔ Italian (it)
+- English (en) ↔ Russian (ru)
 
-1. **Clone the Repository**:
-    ```bash
-    git clone https://github.com/yourusername/aws-translation-service.git
-    cd aws-translation-service
-    ```
+## 📋 Variables
 
-2. **Deploy the Infrastructure**:
-    ```bash
-    terraform init
-    terraform apply
-    ```
+| Variable | Type | Description |
+|----------|------|-------------|
+| `function_name` | `string` | Name of the Lambda function |
+| `function_handler` | `string` | Function handler (lambda_translate.lambda_handler) |
+| `request_bucket` | `string` | S3 bucket name for storing requests |
+| `response_bucket` | `string` | S3 bucket name for storing responses |
+| `request_bucket_arn` | `string` | ARN of the request S3 bucket |
+| `response_bucket_arn` | `string` | ARN of the response S3 bucket |
+| `request_bucket_name` | `string` | Name of the request bucket (alternative) |
+| `response_bucket_name` | `string` | Name of the response bucket (alternative) |
+| `kms_key_id` | `string` | KMS key ID for encryption |
+| `project` | `string` | Project name for tagging |
+| `environment` | `string` | Environment name (dev, staging, production) |
+| `region` | `string` | AWS region for deployment |
+| `tags` | `map(string)` | Additional resource tags |
 
-3. **Configure the API Gateway**:
-    - Set up the API methods and resources.
-    - Enable CORS for web access.
+## 📤 Outputs
 
-4. **Upload the Frontend**:
-    - Build the frontend application.
-    - Upload to the designated S3 bucket.
+| Output | Description |
+|--------|-------------|
+| `function_arn` | ARN of the Lambda function |
+| `function_name` | Name of the Lambda function |
+| `function_invoke_arn` | Invoke ARN for API Gateway integration |
+| `lambda_invoke_arn` | Alternative invoke ARN output |
 
-5. **Test the Service**:
-    - Access the API Gateway endpoint.
-    - Send translation requests and receive responses.
-
-## 📂 Repository Structure
-
-- **infrastructure/**: Terraform scripts for AWS resources
-- **lambda/**: AWS Lambda function code
-- **frontend/**: Web interface source code
-- **scripts/**: Helper scripts for deployment and management
-- **docs/**: Documentation and architecture diagrams
-
-## 📜 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-# README for the Lambda Module
-
- **Module Name:** `lambda`  
- **Purpose:** This Terraform module provisions an **AWS Lambda function** to process **translation requests**. It integrates with **S3 buckets**, **AWS Translate**, and **KMS encryption**.
-
----
-
-## ** Features**
-- ✅ Creates a **Lambda function** with Python 3.12.  
-- ✅ Configures **IAM roles & policies** for security.  
-- ✅ Enables **logging** with CloudWatch Logs.  
-- ✅ Provides **KMS encryption** for secure data handling.  
-- ✅ Supports **environment-specific deployments** via variables.  
-
----
-
-## ** Module Structure**
-
-lambda/ │── data.tf # Defines dependencies like IAM policy & archive file
-- iam.tf # Creates IAM roles & permissions for Lambda
-─ main.tf # Creates the Lambda function & CloudWatch logging
-─ outputs.tf # Exports Lambda function details
-─ variables.tf # Defines input variables for customization
-─ README.md # Documentation for the module
-─ lambda_translate.py # Python script for translation 
-
-## ** Usage**
-To use this module, include it in your Terraform configuration:
+## 🚀 Usage
 
 ```hcl
-module "lambda_translate" {
-  source              = "./modules/lambda"
-  function_name       = "translate-function"
-  function_handler    = "lambda_translate.lambda_handler"
-  request_bucket      = module.s3_request.bucket_name
-  response_bucket     = module.s3_response.bucket_name
-  request_bucket_arn  = module.s3_request.bucket_arn
-  response_bucket_arn = module.s3_response.bucket_arn
-  kms_key_id          = module.kms_key.key_arn
-  tags                = var.tags
-  project             = var.project
-  environment         = var.environment
-  region              = var.region
+module "lambda" {
+  source               = "./modules/lambda"
+  function_name        = "translation-lambda"
+  function_handler     = "lambda_translate.lambda_handler"
+  request_bucket       = module.request_bucket.bucket_name
+  response_bucket      = module.response_bucket.bucket_name
+  request_bucket_arn   = module.request_bucket.bucket_arn
+  response_bucket_arn  = module.response_bucket.bucket_arn
+  kms_key_id           = module.kms_key.key_arn
+  project              = "aws-translate"
+  environment          = "production"
+  region               = "us-east-1"
+  tags = {
+    CreatedBy = "Samuel Adusei Boateng"
+  }
 }
 ```
 
-## 🚀 Deployment
+## � Function Behavior
 
-### Prerequisites
-- AWS CLI configured
-- Terraform installed
-- Valid AWS credentials
-
-### Deploy Infrastructure
-
-```bash
-# Initialize Terraform
-terraform init
-
-# Plan deployment
-terraform plan
-
-# Deploy to AWS
-terraform apply
+### Input Format
+```json
+{
+  "httpMethod": "POST",
+  "body": "{\"source_language\": \"en\", \"target_language\": \"es\", \"text\": \"Hello world\"}"
+}
 ```
 
-├── modules/
-│   ├── api_gateway/     # API Gateway configuration
-│   ├── lambda/          # Lambda function code and config
-│   ├── s3_frontend/     # Frontend hosting
-│   ├── s3_buckets/      # S3 storage buckets
-│   └── kms_key/         # KMS encryption
-├── main.tf              # Main Terraform configuration
-├── variables.tf         # Input variables
-├── outputs.tf           # Output values
-└── README.md           # This file
-
-## 8. Add and Push README
-
-```bash
-# Add README and push
-git add README.md
-git commit -m "📚 Add comprehensive README documentation"
-git push
+### Output Format
+```json
+{
+  "statusCode": 200,
+  "headers": {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*"
+  },
+  "body": "{\"original_text\": \"Hello world\", \"translated_text\": \"Hola mundo\", \"source_language\": \"en\", \"target_language\": \"es\"}"
+}
 ```
 
-# Create a release tag
-git tag -a v1.0.0 -m "🎉 Release v1.0.0 - Complete AWS Translation Service
+## 🔒 Security Features
+- **IAM Role**: Least-privilege permissions for S3 and Translate
+- **KMS Encryption**: Environment variables encrypted at rest
+- **VPC**: Runs in AWS-managed VPC for security
+- **X-Ray Tracing**: Enabled for performance monitoring
 
-✅ Serverless translation API
-✅ Web frontend interface  
-✅ Multi-language support
-✅ Production-ready infrastructure
-✅ Comprehensive documentation"
+## 📊 Monitoring
+- **CloudWatch Logs**: Function execution logs with 1-day retention
+- **X-Ray Tracing**: Request tracing for debugging
+- **Metrics**: Lambda invocation, duration, and error metrics
 
-# Push the tag
-git push --tags
+## 💰 Cost Optimization
+- **Memory**: 128 MB (minimum required)
+- **Timeout**: 30 seconds (sufficient for translation)
+- **Log Retention**: 1 day (cost-effective)
+- **Architecture**: x86_64 for cost efficiency
+
+## 📝 Notes
+- Function code is packaged as `lambda_translate.zip`
+- Environment variables: `REQUEST_BUCKET` and `RESPONSE_BUCKET`
+- Supports both `request_bucket` and `request_bucket_name` variables for flexibility
+- Function automatically creates S3 objects for audit trail

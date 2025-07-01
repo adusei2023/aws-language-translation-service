@@ -14,7 +14,7 @@ variable "environment" {
 variable "region" {
   description = "AWS region where resources will be deployed"
   type        = string
-  default     = "eu-west-1"
+  default     = "us-east-1"
 }
 
 # Tags for resource identification and tracking
@@ -22,7 +22,7 @@ variable "tags" {
   description = "Metadata tags to apply to all resources for better organization"
   type        = map(string)
   default = {
-    CreatedBy = "George"
+    CreatedBy = "Samuel Adusei Boateng"
   }
 }
 
@@ -55,7 +55,7 @@ variable "key_owners" {
   description = "List of IAM principal ARNs that have full control over the KMS key"
   type        = list(string)
   default = [
-    "arn:aws:iam::314146303416:user/Eli_George",
+    "arn:aws:iam::061039790475:root",
   ]
 }
 
@@ -110,7 +110,7 @@ variable "request_bucket_policy_actions" {
   default     = ["s3:PutObject"]
 }
 
-variable "reponse_bucket_policy_actions" {
+variable "response_bucket_policy_actions" {
   description = "List of allowed actions for the translation response bucket"
   type        = list(string)
   default     = ["s3:PutObject", "s3:GetObject"]
@@ -147,13 +147,4 @@ variable "response_bucket_name" {
   description = "Name of the S3 bucket for responses"
   type        = string
   default     = "response-bucket-1750850081-unique"
-}
-variable "response_bucket_policy_actions" {
-
-  description = "List of allowed actions for response bucket policy"
-
-  type        = list(string)
-
-  default     = ["s3:GetObject", "s3:PutObject", "s3:ListBucket"]
-
 }

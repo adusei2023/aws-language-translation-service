@@ -18,7 +18,7 @@ variable "region" {
   type        = string
 }
 
-variable "lambaFunctionInvokeArn" {
+variable "lambdaFunctionInvokeArn" {
   description = "ARN of the Lambda function to invoke"
   type        = string
 }

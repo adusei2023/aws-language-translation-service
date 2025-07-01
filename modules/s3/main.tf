@@ -28,7 +28,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
   rule {
     apply_server_side_encryption_by_default {
       kms_master_key_id = var.kms_key_id # Use the provided KMS key for encryption
-      sse_algorithm     = "aws:kms" # Use AWS Key Management Service (KMS)
+      sse_algorithm     = "aws:kms"      # Use AWS Key Management Service (KMS)
     }
   }
 }
@@ -40,10 +40,10 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
 # ---------------------------------------------------------------------------------------------------------------------
 resource "aws_s3_bucket_public_access_block" "this" {
   bucket                  = aws_s3_bucket.this.id
-  block_public_acls       = true  # Prevent public ACLs from being added
-  block_public_policy     = true  # Prevent a public bucket policy
-  ignore_public_acls      = true  # Ignore any public ACLs that may exist
-  restrict_public_buckets = true  # Ensure that the bucket is not publicly accessible
+  block_public_acls       = true # Prevent public ACLs from being added
+  block_public_policy     = true # Prevent a public bucket policy
+  ignore_public_acls      = true # Ignore any public ACLs that may exist
+  restrict_public_buckets = true # Ensure that the bucket is not publicly accessible
 }
 
 # ---------------------------------------------------------------------------------------------------------------------

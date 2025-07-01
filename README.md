@@ -62,7 +62,7 @@ language-translation-aws-iac-solution/
 │   │   ├── 📄 outputs.tf                # Lambda outputs
 │   │   └── 📄 lambda_translate.py       # Python translation function
 │   │
-│   ├── 📁 s3_frontend/                  # Frontend hosting module
+│   ├── 📁 frontend/                     # Frontend hosting module
 │   │   ├── 📄 main.tf                   # S3 static website config
 │   │   ├── 📄 variables.tf              # Frontend variables
 │   │   ├── 📄 outputs.tf                # Frontend outputs
@@ -70,12 +70,12 @@ language-translation-aws-iac-solution/
 │   │   ├── 📄 style.css                 # Styling
 │   │   └── 📄 app.js                    # Frontend JavaScript
 │   │
-│   ├── 📁 s3_buckets/                   # S3 storage module
+│   ├── 📁 s3/                           # S3 storage module
 │   │   ├── 📄 main.tf                   # Request/Response buckets
 │   │   ├── 📄 variables.tf              # S3 variables
 │   │   └── 📄 outputs.tf                # S3 outputs
 │   │
-│   └── 📁 kms_key/                      # KMS encryption module
+│   └── 📁 kms/                          # KMS encryption module
 │       ├── 📄 main.tf                   # KMS key configuration
 │       ├── 📄 variables.tf              # KMS variables
 │       └── 📄 outputs.tf                # KMS outputs

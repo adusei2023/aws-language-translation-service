@@ -420,7 +420,13 @@ terraform plan
 **Samuel Adusei Boateng** - *Project Lead & AWS Infrastructure Developer*
 - LinkedIn: https://www.linkedin.com/in/samueladuseiboateng/
 - Role: Terraform Infrastructure, Lambda Development, API Gateway Configuration, Frontend Development
-- Contributions: Complete architecture design and implementation
+- Contributions: Complete architecture design and 
+
+**Irene Vanessa Vifah** - *Project Team  & Front-end lead*
+- LinkedIn: https://www.linkedin.com/in/irenevanessavifah/
+
+- Role: Terraform Infrastructure, Front-end Development, API Gateway Configuration
+- Contributions: Built and implemented front-end
 
 *Additional team members can be added here*
 

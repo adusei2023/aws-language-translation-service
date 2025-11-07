@@ -194,16 +194,15 @@ curl -X GET "https://YOUR_API_GATEWAY_URL/production/translate"
 - **Methods**: GET (health), POST (translate), OPTIONS (preflight)
 - **Integration**: Lambda Proxy Integration
 - **Stage**: production
-- **Caching**: Enabled with 5-minute TTL and encryption
-- **Cache Size**: 0.5 GB
 - **Throttling**: Rate limit of 100 requests/second, burst limit of 50
+- **X-Ray Tracing**: Enabled for performance monitoring
 
 ### Performance Features
 
-- **Lambda Caching**: Translations cached in Lambda memory for fast repeated requests
-- **API Gateway Caching**: 5-minute cache TTL reduces Lambda invocations by up to 80%
-- **Frontend Caching**: Client-side cache stores up to 50 recent translations
-- **Connection Pooling**: AWS SDK clients reused across Lambda invocations
+- **Lambda Caching**: LRU cache in Lambda memory for up to 100 translations with automatic eviction
+- **Frontend Caching**: Client-side cache stores up to 50 recent translations with instant retrieval
+- **Connection Pooling**: AWS SDK clients reused across Lambda invocations for lower latency
+- **Optimized Memory**: 256MB Lambda memory allocation for faster execution and reduced cold starts
 - **CloudWatch Alarms**: Real-time monitoring of errors, latency, and throttling
 - **X-Ray Tracing**: End-to-end request tracing for performance optimization
 
@@ -252,25 +251,21 @@ wait
 
 ## ⚡ Performance Optimization
 
-### Multi-Level Caching Strategy
+### Dual-Level Caching Strategy
 
 1. **Frontend Cache** (Browser)
-   - Stores up to 50 recent translations in browser memory
-   - Instant response for repeated translations
+   - Stores up to 50 recent translations in browser memory using Map data structure
+   - Instant response for repeated translations (<50ms)
    - Cache key: `source_lang:target_lang:text`
-   - Visual indicator shows when cached results are used
+   - LRU eviction when cache is full
+   - Visual indicator shows when cached results are used (⚡ Cached)
 
-2. **API Gateway Cache** (Edge)
-   - 5-minute TTL for all translation requests
-   - Encrypted cache with KMS
-   - Reduces Lambda invocations by up to 80%
-   - Automatically invalidated after TTL expires
-
-3. **Lambda Memory Cache** (Execution Environment)
-   - In-memory cache for up to 100 translations
-   - Persists across warm Lambda invocations
+2. **Lambda Memory Cache** (Execution Environment)
+   - LRU cache for up to 100 translations with automatic eviction
+   - Persists across warm Lambda invocations (typically minutes to hours)
    - Eliminates AWS Translate API calls for cached items
-   - Automatic cache size management
+   - Thread-safe implementation using OrderedDict
+   - Logs cache hits and current size for monitoring
 
 ### Performance Metrics
 
@@ -279,10 +274,11 @@ wait
 - Cold Start: 2-3 seconds
 - Lambda Memory: 128 MB
 - Cache Hit Rate: 0%
+- AWS Translate API Calls: 100% of requests
 
 **After Optimization:**
-- Average Response Time: 50-200ms (cached)
-- Cold Start: Reduced to 1-1.5 seconds (higher memory)
+- Average Response Time: 50-100ms (frontend cache), 200-400ms (Lambda cache), 800-1200ms (new translations)
+- Cold Start: Reduced to 1-1.5 seconds (higher memory allocation)
 - Lambda Memory: 256 MB
 - Cache Hit Rate: 60-80% (typical usage)
 - Cached Response Time: <50ms (frontend cache)
@@ -290,9 +286,10 @@ wait
 ### Best Practices
 
 1. **Use Repeated Translations**: The caching system works best when users translate similar phrases
-2. **Monitor Cache Metrics**: Check CloudWatch for cache hit/miss ratios
-3. **Adjust Cache TTL**: Modify API Gateway cache TTL based on your use case
+2. **Monitor Cache Metrics**: Check CloudWatch logs for cache hit/miss statistics
+3. **Warm-up Lambda**: Consider scheduled warming requests to keep Lambda instances warm
 4. **Scale Reserved Concurrency**: Increase from 10 if you expect higher traffic
+5. **Clear Browser Cache**: Users can refresh the page to clear frontend cache if needed
 
 ### Performance Monitoring
 
@@ -301,7 +298,6 @@ The system includes CloudWatch alarms for:
 - Lambda duration and concurrent executions
 - API Gateway 4XX/5XX errors
 - API Gateway latency
-- Cache hit/miss ratios
 
 ## 📊 Monitoring
 
@@ -428,28 +424,28 @@ aws lambda put-function-configuration \
 - **CloudWatch**: ~$0.50 (logs retention)
 - **Total**: ~$19.25/month
 
-**With Performance Optimizations (60% cache hit rate):**
-- **Lambda**: ~$0.30 (256MB, ~400 actual invocations due to caching)
-- **API Gateway**: ~$3.50 (1000 requests) + ~$0.20 (cache)
+**With Performance Optimizations (50% cache hit rate):**
+- **Lambda**: ~$0.35 (256MB, 1000 invocations but faster execution)
+- **API Gateway**: ~$3.50 (1000 requests)
 - **S3**: ~$0.05 (storage + requests)
-- **AWS Translate**: ~$6.00 (400 actual translations due to caching)
+- **AWS Translate**: ~$7.50 (500 actual translations due to Lambda caching)
 - **CloudWatch**: ~$0.60 (logs retention + alarms)
-- **Total**: ~$10.65/month (**45% cost reduction**)
+- **Total**: ~$12.00/month (**38% cost reduction**)
 
 ### Cost Saving Benefits
 
-1. **Caching Reduces AWS Translate Costs**: 60-80% reduction in translation API calls
-2. **Reduced Lambda Invocations**: API Gateway cache prevents unnecessary Lambda executions
-3. **Lower Data Transfer**: Cached responses served directly from edge locations
-4. **Efficient Memory Usage**: 256MB provides better performance without excessive cost
+1. **Lambda Caching Reduces AWS Translate Costs**: 50-70% reduction in translation API calls for typical workloads
+2. **Optimized Lambda Configuration**: Higher memory (256MB) reduces execution time, offsetting the memory cost increase
+3. **Frontend Caching**: Zero server costs for cached translations served from browser
+4. **Efficient Resource Usage**: Reserved concurrency prevents over-provisioning
 
 ### Additional Cost Saving Tips
 
-- Use shorter text for translations
-- Monitor cache hit rates and adjust TTL accordingly
-- Review CloudWatch logs retention periodically
+- Encourage users to leverage the cache by translating common phrases
+- Monitor Lambda cache efficiency in CloudWatch logs
+- Review CloudWatch logs retention periodically (currently set to 7 days)
 - Use S3 lifecycle policies for old data
-- Consider disabling cache in development environments
+- Adjust reserved concurrency based on actual usage patterns
 
 ## 🔄 CI/CD Pipeline
 

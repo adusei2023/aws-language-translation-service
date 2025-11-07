@@ -4,7 +4,7 @@ import logging
 import os
 from datetime import datetime
 import uuid
-from functools import lru_cache
+from collections import OrderedDict
 
 # Configure logging
 logger = logging.getLogger()
@@ -14,9 +14,30 @@ logger.setLevel(getattr(logging, log_level))
 # Initialize AWS Translate client outside handler for connection reuse
 translate = boto3.client('translate')
 
-# Simple in-memory cache for repeated translations (limited size to prevent memory issues)
-translation_cache = {}
-MAX_CACHE_SIZE = 100
+# LRU cache implementation for repeated translations
+class LRUCache:
+    def __init__(self, capacity: int):
+        self.cache = OrderedDict()
+        self.capacity = capacity
+    
+    def get(self, key: str):
+        if key not in self.cache:
+            return None
+        # Move to end to mark as recently used
+        self.cache.move_to_end(key)
+        return self.cache[key]
+    
+    def put(self, key: str, value: str):
+        if key in self.cache:
+            # Update existing key and move to end
+            self.cache.move_to_end(key)
+        self.cache[key] = value
+        if len(self.cache) > self.capacity:
+            # Remove least recently used item
+            self.cache.popitem(last=False)
+
+# Initialize cache
+translation_cache = LRUCache(capacity=100)
 
 def lambda_handler(event, context):
     """
@@ -133,9 +154,12 @@ def lambda_handler(event, context):
         cache_key = f"{source_language}:{target_language}:{text}"
         
         # Check cache first for improved performance
-        if cache_key in translation_cache:
-            logger.info("Cache hit - returning cached translation")
-            translated_text = translation_cache[cache_key]
+        cached_translation = translation_cache.get(cache_key)
+        is_cached = cached_translation is not None
+        
+        if is_cached:
+            logger.info(f"Cache hit - returning cached translation. Cache size: {len(translation_cache.cache)}")
+            translated_text = cached_translation
         else:
             # Call AWS Translate
             try:
@@ -147,10 +171,9 @@ def lambda_handler(event, context):
                 
                 translated_text = response['TranslatedText']
                 
-                # Store in cache if cache is not full
-                if len(translation_cache) < MAX_CACHE_SIZE:
-                    translation_cache[cache_key] = translated_text
-                    logger.info(f"Translation cached. Cache size: {len(translation_cache)}")
+                # Store in LRU cache
+                translation_cache.put(cache_key, translated_text)
+                logger.info(f"Translation cached. Cache size: {len(translation_cache.cache)}")
                 
                 logger.info(f"Translation successful: {translated_text}")
                 
@@ -176,7 +199,7 @@ def lambda_handler(event, context):
                 'target_language': target_language,
                 'timestamp': timestamp,
                 'request_id': unique_id,
-                'cached': cache_key in translation_cache
+                'cached': is_cached
             })
         }
         

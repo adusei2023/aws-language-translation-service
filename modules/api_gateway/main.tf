@@ -161,33 +161,23 @@ resource "aws_api_gateway_stage" "main" {
   rest_api_id   = aws_api_gateway_rest_api.main.id
   stage_name    = var.environment
   
-  # Enable caching for better performance
-  cache_cluster_enabled = true
-  cache_cluster_size    = "0.5" # 0.5GB cache - smallest size for cost optimization
-  
   # Performance and monitoring settings
   xray_tracing_enabled = true
-  
-  # Method settings for caching
-  variables = {
-    "cacheEnabled" = "true"
-  }
   
   tags = var.tags
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
-# API GATEWAY METHOD SETTINGS - Enable caching for POST requests
+# API GATEWAY METHOD SETTINGS - Configure performance settings
+# Note: Caching is disabled for POST requests as they typically have unique request bodies.
+# Caching is implemented at Lambda (in-memory) and frontend (browser) levels instead.
 # ---------------------------------------------------------------------------------------------------------------------
-resource "aws_api_gateway_method_settings" "translate_cache" {
+resource "aws_api_gateway_method_settings" "translate_settings" {
   rest_api_id = aws_api_gateway_rest_api.main.id
   stage_name  = aws_api_gateway_stage.main.stage_name
-  method_path = "${aws_api_gateway_resource.translate.path_part}/${aws_api_gateway_method.translate.http_method}"
+  method_path = "translate/POST"
 
   settings {
-    caching_enabled        = true
-    cache_ttl_in_seconds   = 300  # Cache for 5 minutes
-    cache_data_encrypted   = true
     metrics_enabled        = true
     logging_level          = "INFO"
     data_trace_enabled     = false

@@ -181,8 +181,8 @@ resource "aws_api_gateway_method_settings" "translate_settings" {
     metrics_enabled        = true
     logging_level          = "INFO"
     data_trace_enabled     = false
-    throttling_rate_limit  = 100
-    throttling_burst_limit = 50
+    throttling_rate_limit  = 100   # Sustained rate: 100 requests per second
+    throttling_burst_limit = 200   # Burst capacity: 200 requests
   }
 }
 

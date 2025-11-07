@@ -29,11 +29,12 @@ class LRUCache:
     
     def put(self, key: str, value: str):
         if key in self.cache:
-            # Update existing key and move to end
-            self.cache.move_to_end(key)
+            # Remove existing key first
+            del self.cache[key]
+        # Add/update value at the end
         self.cache[key] = value
+        # Evict least recently used item if over capacity
         if len(self.cache) > self.capacity:
-            # Remove least recently used item
             self.cache.popitem(last=False)
 
 # Initialize cache
@@ -150,8 +151,9 @@ def lambda_handler(event, context):
         
         logger.info(f"Translating: '{text}' from {source_language} to {target_language}")
         
-        # Generate cache key for this translation request
-        cache_key = f"{source_language}:{target_language}:{text}"
+        # Generate cache key using a safe delimiter to prevent collisions
+        # Using | as delimiter since it's rarely used in natural language text
+        cache_key = f"{source_language}|{target_language}|{text}"
         
         # Check cache first for improved performance
         cached_translation = translation_cache.get(cache_key)

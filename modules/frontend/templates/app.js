@@ -60,13 +60,18 @@ document.addEventListener('DOMContentLoaded', function() {
             btnLoader.classList.remove('hidden');
 
             try {
-                // Generate cache key
-                const cacheKey = `${sourceLanguage}:${targetLanguage}:${inputText}`;
+                // Generate cache key (using | as delimiter to prevent collisions)
+                const cacheKey = `${sourceLanguage}|${targetLanguage}|${inputText}`;
                 
-                // Check local cache first
+                // Check local cache first with proper LRU behavior
                 if (translationCache.has(cacheKey)) {
                     console.log('Using cached translation');
                     const cachedResult = translationCache.get(cacheKey);
+                    
+                    // Move to end for LRU behavior (delete and re-add)
+                    translationCache.delete(cacheKey);
+                    translationCache.set(cacheKey, cachedResult);
+                    
                     showResult(cachedResult.translated_text, sourceLanguage, targetLanguage, inputText, true);
                     
                     // Reset button state

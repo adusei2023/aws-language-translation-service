@@ -1,15 +1,22 @@
 import json
 import boto3
 import logging
+import os
 from datetime import datetime
 import uuid
+from functools import lru_cache
 
 # Configure logging
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+log_level = os.environ.get('LOG_LEVEL', 'INFO')
+logger.setLevel(getattr(logging, log_level))
 
-# Initialize AWS Translate client
+# Initialize AWS Translate client outside handler for connection reuse
 translate = boto3.client('translate')
+
+# Simple in-memory cache for repeated translations (limited size to prevent memory issues)
+translation_cache = {}
+MAX_CACHE_SIZE = 100
 
 def lambda_handler(event, context):
     """
@@ -122,41 +129,56 @@ def lambda_handler(event, context):
         
         logger.info(f"Translating: '{text}' from {source_language} to {target_language}")
         
-        # Call AWS Translate
-        try:
-            response = translate.translate_text(
-                Text=text,
-                SourceLanguageCode=source_language,
-                TargetLanguageCode=target_language
-            )
-            
-            translated_text = response['TranslatedText']
-            logger.info(f"Translation successful: {translated_text}")
-            
-            # Return success response
-            return {
-                'statusCode': 200,
-                'headers': cors_headers,
-                'body': json.dumps({
-                    'original_text': text,
-                    'translated_text': translated_text,
-                    'source_language': source_language,
-                    'target_language': target_language,
-                    'timestamp': timestamp,
-                    'request_id': unique_id
-                })
-            }
-            
-        except Exception as translate_error:
-            logger.error(f"Translation service error: {str(translate_error)}")
-            return {
-                'statusCode': 500,
-                'headers': cors_headers,
-                'body': json.dumps({
-                    'error': 'Translation service failed',
-                    'details': str(translate_error)
-                })
-            }
+        # Generate cache key for this translation request
+        cache_key = f"{source_language}:{target_language}:{text}"
+        
+        # Check cache first for improved performance
+        if cache_key in translation_cache:
+            logger.info("Cache hit - returning cached translation")
+            translated_text = translation_cache[cache_key]
+        else:
+            # Call AWS Translate
+            try:
+                response = translate.translate_text(
+                    Text=text,
+                    SourceLanguageCode=source_language,
+                    TargetLanguageCode=target_language
+                )
+                
+                translated_text = response['TranslatedText']
+                
+                # Store in cache if cache is not full
+                if len(translation_cache) < MAX_CACHE_SIZE:
+                    translation_cache[cache_key] = translated_text
+                    logger.info(f"Translation cached. Cache size: {len(translation_cache)}")
+                
+                logger.info(f"Translation successful: {translated_text}")
+                
+            except Exception as translate_error:
+                logger.error(f"Translation service error: {str(translate_error)}")
+                return {
+                    'statusCode': 500,
+                    'headers': cors_headers,
+                    'body': json.dumps({
+                        'error': 'Translation service failed',
+                        'details': str(translate_error)
+                    })
+                }
+        
+        # Return success response
+        return {
+            'statusCode': 200,
+            'headers': cors_headers,
+            'body': json.dumps({
+                'original_text': text,
+                'translated_text': translated_text,
+                'source_language': source_language,
+                'target_language': target_language,
+                'timestamp': timestamp,
+                'request_id': unique_id,
+                'cached': cache_key in translation_cache
+            })
+        }
         
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}", exc_info=True)

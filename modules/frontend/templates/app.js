@@ -3,6 +3,23 @@ const API_URL = '${api_gateway_url}';
 
 console.log('API URL:', API_URL);
 
+// Translation cache for better performance
+const translationCache = new Map();
+const MAX_CACHE_SIZE = 50;
+
+// Debounce function to prevent excessive API calls
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('translationForm');
     const resultDiv = document.getElementById('result');
@@ -43,6 +60,22 @@ document.addEventListener('DOMContentLoaded', function() {
             btnLoader.classList.remove('hidden');
 
             try {
+                // Generate cache key
+                const cacheKey = `${sourceLanguage}:${targetLanguage}:${inputText}`;
+                
+                // Check local cache first
+                if (translationCache.has(cacheKey)) {
+                    console.log('Using cached translation');
+                    const cachedResult = translationCache.get(cacheKey);
+                    showResult(cachedResult.translated_text, sourceLanguage, targetLanguage, inputText, true);
+                    
+                    // Reset button state
+                    translateBtn.disabled = false;
+                    btnText.classList.remove('hidden');
+                    btnLoader.classList.add('hidden');
+                    return;
+                }
+                
                 const requestBody = {
                     source_language: sourceLanguage,
                     target_language: targetLanguage,
@@ -73,7 +106,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('Translation result:', result);
 
                 if (result.translated_text) {
-                    showResult(result.translated_text, sourceLanguage, targetLanguage, inputText);
+                    // Store in cache
+                    if (translationCache.size >= MAX_CACHE_SIZE) {
+                        // Remove oldest entry if cache is full
+                        const firstKey = translationCache.keys().next().value;
+                        translationCache.delete(firstKey);
+                    }
+                    translationCache.set(cacheKey, result);
+                    
+                    showResult(result.translated_text, sourceLanguage, targetLanguage, inputText, result.cached || false);
                 } else {
                     throw new Error('No translated text in response');
                 }
@@ -90,7 +131,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function showResult(translatedText, sourceLanguage, targetLanguage, originalText) {
+    function showResult(translatedText, sourceLanguage, targetLanguage, originalText, cached = false) {
+        const cacheIndicator = cached ? ' <span style="color: #10b981; font-size: 0.9em;">(⚡ Cached)</span>' : '';
         translatedTextDiv.innerHTML = `
             <div class="translation-result">
                 <div class="original-text">
@@ -98,7 +140,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p>"$${originalText}"</p>
                 </div>
                 <div class="translated-text-content">
-                    <strong>Translation ($${getLanguageName(targetLanguage)}):</strong>
+                    <strong>Translation ($${getLanguageName(targetLanguage)})${cacheIndicator}:</strong>
                     <p>"$${translatedText}"</p>
                 </div>
             </div>

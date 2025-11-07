@@ -160,6 +160,40 @@ resource "aws_api_gateway_stage" "main" {
   deployment_id = aws_api_gateway_deployment.main.id
   rest_api_id   = aws_api_gateway_rest_api.main.id
   stage_name    = var.environment
+  
+  # Enable caching for better performance
+  cache_cluster_enabled = true
+  cache_cluster_size    = "0.5" # 0.5GB cache - smallest size for cost optimization
+  
+  # Performance and monitoring settings
+  xray_tracing_enabled = true
+  
+  # Method settings for caching
+  variables = {
+    "cacheEnabled" = "true"
+  }
+  
+  tags = var.tags
+}
+
+# ---------------------------------------------------------------------------------------------------------------------
+# API GATEWAY METHOD SETTINGS - Enable caching for POST requests
+# ---------------------------------------------------------------------------------------------------------------------
+resource "aws_api_gateway_method_settings" "translate_cache" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  stage_name  = aws_api_gateway_stage.main.stage_name
+  method_path = "${aws_api_gateway_resource.translate.path_part}/${aws_api_gateway_method.translate.http_method}"
+
+  settings {
+    caching_enabled        = true
+    cache_ttl_in_seconds   = 300  # Cache for 5 minutes
+    cache_data_encrypted   = true
+    metrics_enabled        = true
+    logging_level          = "INFO"
+    data_trace_enabled     = false
+    throttling_rate_limit  = 100
+    throttling_burst_limit = 50
+  }
 }
 
 # ---------------------------------------------------------------------------------------------------------------------

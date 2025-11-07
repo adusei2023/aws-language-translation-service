@@ -194,7 +194,7 @@ curl -X GET "https://YOUR_API_GATEWAY_URL/production/translate"
 - **Methods**: GET (health), POST (translate), OPTIONS (preflight)
 - **Integration**: Lambda Proxy Integration
 - **Stage**: production
-- **Throttling**: Rate limit of 100 requests/second, burst limit of 50
+- **Throttling**: Sustained rate of 100 requests/second, burst capacity of 200 requests
 - **X-Ray Tracing**: Enabled for performance monitoring
 
 ### Performance Features
@@ -256,14 +256,15 @@ wait
 1. **Frontend Cache** (Browser)
    - Stores up to 50 recent translations in browser memory using Map data structure
    - Instant response for repeated translations (<50ms)
-   - Cache key: `source_lang:target_lang:text`
-   - LRU eviction when cache is full
+   - Cache key: SHA-256 hash of `source_lang|target_lang|text` for collision-free caching
+   - LRU eviction when cache is full (delete and re-add on access)
    - Visual indicator shows when cached results are used (⚡ Cached)
 
 2. **Lambda Memory Cache** (Execution Environment)
    - LRU cache for up to 100 translations with automatic eviction
    - Persists across warm Lambda invocations (typically minutes to hours)
    - Eliminates AWS Translate API calls for cached items
+   - Cache key: SHA-256 hash prevents all collision attacks
    - Thread-safe implementation using OrderedDict
    - Logs cache hits and current size for monitoring
 

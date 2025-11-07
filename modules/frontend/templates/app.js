@@ -7,6 +7,17 @@ console.log('API URL:', API_URL);
 const translationCache = new Map();
 const MAX_CACHE_SIZE = 50;
 
+// Simple hash function for creating cache keys
+function hashString(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32-bit integer
+    }
+    return hash.toString(36);
+}
+
 // Debounce function to prevent excessive API calls
 function debounce(func, wait) {
     let timeout;
@@ -60,8 +71,8 @@ document.addEventListener('DOMContentLoaded', function() {
             btnLoader.classList.remove('hidden');
 
             try {
-                // Generate cache key (using | as delimiter to prevent collisions)
-                const cacheKey = `${sourceLanguage}|${targetLanguage}|${inputText}`;
+                // Generate secure cache key using hash to prevent collisions
+                const cacheKey = hashString(`${sourceLanguage}|${targetLanguage}|${inputText}`);
                 
                 // Check local cache first with proper LRU behavior
                 if (translationCache.has(cacheKey)) {

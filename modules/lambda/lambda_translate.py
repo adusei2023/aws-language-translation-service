@@ -2,6 +2,7 @@ import json
 import boto3
 import logging
 import os
+import hashlib
 from datetime import datetime
 import uuid
 from collections import OrderedDict
@@ -151,9 +152,11 @@ def lambda_handler(event, context):
         
         logger.info(f"Translating: '{text}' from {source_language} to {target_language}")
         
-        # Generate cache key using a safe delimiter to prevent collisions
-        # Using | as delimiter since it's rarely used in natural language text
-        cache_key = f"{source_language}|{target_language}|{text}"
+        # Generate secure cache key using hash to prevent collision attacks
+        # Hash combines all components to create a unique, safe cache key
+        cache_key = hashlib.sha256(
+            f"{source_language}|{target_language}|{text}".encode('utf-8')
+        ).hexdigest()
         
         # Check cache first for improved performance
         cached_translation = translation_cache.get(cache_key)

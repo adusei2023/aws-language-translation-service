@@ -300,24 +300,3 @@ resource "aws_cloudwatch_metric_alarm" "api_latency" {
 
   tags = var.tags
 }
-
-# Alarm for API Gateway cache hit count (to monitor caching effectiveness)
-resource "aws_cloudwatch_metric_alarm" "api_cache_hit_count" {
-  alarm_name          = "${var.project}-${var.environment}-api-cache-hit-low"
-  comparison_operator = "LessThanThreshold"
-  evaluation_periods  = 2
-  metric_name         = "CacheHitCount"
-  namespace           = "AWS/ApiGateway"
-  period              = 300
-  statistic           = "Sum"
-  threshold           = 5
-  alarm_description   = "This metric monitors API Gateway cache effectiveness"
-  treat_missing_data  = "notBreaching"
-
-  dimensions = {
-    ApiName = aws_api_gateway_rest_api.main.name
-    Stage   = aws_api_gateway_stage.main.stage_name
-  }
-
-  tags = var.tags
-}

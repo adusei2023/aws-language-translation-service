@@ -132,19 +132,48 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showResult(translatedText, sourceLanguage, targetLanguage, originalText, cached = false) {
-        const cacheIndicator = cached ? ' <span style="color: #10b981; font-size: 0.9em;">(⚡ Cached)</span>' : '';
-        translatedTextDiv.innerHTML = `
-            <div class="translation-result">
-                <div class="original-text">
-                    <strong>Original ($${getLanguageName(sourceLanguage)}):</strong>
-                    <p>"$${originalText}"</p>
-                </div>
-                <div class="translated-text-content">
-                    <strong>Translation ($${getLanguageName(targetLanguage)})${cacheIndicator}:</strong>
-                    <p>"$${translatedText}"</p>
-                </div>
-            </div>
-        `;
+        // Clear previous content
+        translatedTextDiv.innerHTML = '';
+        
+        // Create elements safely to prevent XSS
+        const resultContainer = document.createElement('div');
+        resultContainer.className = 'translation-result';
+        
+        // Original text section
+        const originalDiv = document.createElement('div');
+        originalDiv.className = 'original-text';
+        const originalStrong = document.createElement('strong');
+        originalStrong.textContent = `Original (${getLanguageName(sourceLanguage)}):`;
+        const originalP = document.createElement('p');
+        originalP.textContent = `"${originalText}"`;
+        originalDiv.appendChild(originalStrong);
+        originalDiv.appendChild(originalP);
+        
+        // Translated text section
+        const translatedDiv = document.createElement('div');
+        translatedDiv.className = 'translated-text-content';
+        const translatedStrong = document.createElement('strong');
+        translatedStrong.textContent = `Translation (${getLanguageName(targetLanguage)})`;
+        
+        // Add cache indicator if applicable
+        if (cached) {
+            const cacheSpan = document.createElement('span');
+            cacheSpan.style.color = '#10b981';
+            cacheSpan.style.fontSize = '0.9em';
+            cacheSpan.textContent = ' (⚡ Cached)';
+            translatedStrong.appendChild(cacheSpan);
+        }
+        
+        const translatedP = document.createElement('p');
+        translatedP.textContent = `"${translatedText}"`;
+        translatedDiv.appendChild(translatedStrong);
+        translatedDiv.appendChild(translatedP);
+        
+        // Assemble the result
+        resultContainer.appendChild(originalDiv);
+        resultContainer.appendChild(translatedDiv);
+        translatedTextDiv.appendChild(resultContainer);
+        
         resultDiv.classList.remove('hidden');
         errorDiv.classList.add('hidden');
     }

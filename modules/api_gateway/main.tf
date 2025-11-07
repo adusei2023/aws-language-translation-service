@@ -243,3 +243,91 @@ resource "aws_api_gateway_method_response" "translate_get_200" {
     "method.response.header.Access-Control-Allow-Origin" = true
   }
 }
+
+# ---------------------------------------------------------------------------------------------------------------------
+# CLOUDWATCH ALARMS FOR API GATEWAY PERFORMANCE MONITORING
+# ---------------------------------------------------------------------------------------------------------------------
+
+# Alarm for API Gateway 4XX errors
+resource "aws_cloudwatch_metric_alarm" "api_4xx_errors" {
+  alarm_name          = "${var.project}-${var.environment}-api-4xx-errors"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "4XXError"
+  namespace           = "AWS/ApiGateway"
+  period              = 60
+  statistic           = "Sum"
+  threshold           = 10
+  alarm_description   = "This metric monitors API Gateway 4XX errors"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    ApiName = aws_api_gateway_rest_api.main.name
+    Stage   = aws_api_gateway_stage.main.stage_name
+  }
+
+  tags = var.tags
+}
+
+# Alarm for API Gateway 5XX errors
+resource "aws_cloudwatch_metric_alarm" "api_5xx_errors" {
+  alarm_name          = "${var.project}-${var.environment}-api-5xx-errors"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "5XXError"
+  namespace           = "AWS/ApiGateway"
+  period              = 60
+  statistic           = "Sum"
+  threshold           = 5
+  alarm_description   = "This metric monitors API Gateway 5XX errors"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    ApiName = aws_api_gateway_rest_api.main.name
+    Stage   = aws_api_gateway_stage.main.stage_name
+  }
+
+  tags = var.tags
+}
+
+# Alarm for API Gateway latency
+resource "aws_cloudwatch_metric_alarm" "api_latency" {
+  alarm_name          = "${var.project}-${var.environment}-api-latency"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "Latency"
+  namespace           = "AWS/ApiGateway"
+  period              = 60
+  statistic           = "Average"
+  threshold           = 2000  # Alert if average latency exceeds 2 seconds
+  alarm_description   = "This metric monitors API Gateway latency"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    ApiName = aws_api_gateway_rest_api.main.name
+    Stage   = aws_api_gateway_stage.main.stage_name
+  }
+
+  tags = var.tags
+}
+
+# Alarm for API Gateway cache hit count (to monitor caching effectiveness)
+resource "aws_cloudwatch_metric_alarm" "api_cache_hit_count" {
+  alarm_name          = "${var.project}-${var.environment}-api-cache-hit-low"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "CacheHitCount"
+  namespace           = "AWS/ApiGateway"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 5
+  alarm_description   = "This metric monitors API Gateway cache effectiveness"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    ApiName = aws_api_gateway_rest_api.main.name
+    Stage   = aws_api_gateway_stage.main.stage_name
+  }
+
+  tags = var.tags
+}

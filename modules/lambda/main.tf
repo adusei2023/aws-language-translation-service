@@ -59,3 +59,87 @@ resource "aws_cloudwatch_log_group" "this" {
     }
   )
 }
+
+# ---------------------------------------------------------------------------------------------------------------------
+# CLOUDWATCH ALARMS FOR PERFORMANCE MONITORING
+# ---------------------------------------------------------------------------------------------------------------------
+
+# Alarm for Lambda errors
+resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
+  alarm_name          = "${var.function_name}-errors"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "Errors"
+  namespace           = "AWS/Lambda"
+  period              = 60
+  statistic           = "Sum"
+  threshold           = 5
+  alarm_description   = "This metric monitors Lambda function errors"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    FunctionName = aws_lambda_function.this.function_name
+  }
+
+  tags = var.tags
+}
+
+# Alarm for Lambda duration (performance)
+resource "aws_cloudwatch_metric_alarm" "lambda_duration" {
+  alarm_name          = "${var.function_name}-duration"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "Duration"
+  namespace           = "AWS/Lambda"
+  period              = 60
+  statistic           = "Average"
+  threshold           = 5000  # Alert if average duration exceeds 5 seconds
+  alarm_description   = "This metric monitors Lambda function duration"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    FunctionName = aws_lambda_function.this.function_name
+  }
+
+  tags = var.tags
+}
+
+# Alarm for Lambda throttles
+resource "aws_cloudwatch_metric_alarm" "lambda_throttles" {
+  alarm_name          = "${var.function_name}-throttles"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "Throttles"
+  namespace           = "AWS/Lambda"
+  period              = 60
+  statistic           = "Sum"
+  threshold           = 1
+  alarm_description   = "This metric monitors Lambda function throttles"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    FunctionName = aws_lambda_function.this.function_name
+  }
+
+  tags = var.tags
+}
+
+# Alarm for Lambda concurrent executions
+resource "aws_cloudwatch_metric_alarm" "lambda_concurrent_executions" {
+  alarm_name          = "${var.function_name}-concurrent-executions"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "ConcurrentExecutions"
+  namespace           = "AWS/Lambda"
+  period              = 60
+  statistic           = "Maximum"
+  threshold           = 8  # Alert when approaching reserved concurrency limit of 10
+  alarm_description   = "This metric monitors Lambda concurrent executions"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    FunctionName = aws_lambda_function.this.function_name
+  }
+
+  tags = var.tags
+}

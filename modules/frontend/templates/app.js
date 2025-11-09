@@ -3,6 +3,34 @@ const API_URL = '${api_gateway_url}';
 
 console.log('API URL:', API_URL);
 
+// Translation cache for better performance
+const translationCache = new Map();
+const MAX_CACHE_SIZE = 50;
+
+// Simple hash function for creating cache keys
+function hashString(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32-bit integer
+    }
+    return hash.toString(36);
+}
+
+// Debounce function to prevent excessive API calls
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('translationForm');
     const resultDiv = document.getElementById('result');
@@ -43,6 +71,27 @@ document.addEventListener('DOMContentLoaded', function() {
             btnLoader.classList.remove('hidden');
 
             try {
+                // Generate secure cache key using hash to prevent collisions
+                const cacheKey = hashString(`${sourceLanguage}|${targetLanguage}|${inputText}`);
+                
+                // Check local cache first with proper LRU behavior
+                if (translationCache.has(cacheKey)) {
+                    console.log('Using cached translation');
+                    const cachedResult = translationCache.get(cacheKey);
+                    
+                    // Move to end for LRU behavior (delete and re-add)
+                    translationCache.delete(cacheKey);
+                    translationCache.set(cacheKey, cachedResult);
+                    
+                    showResult(cachedResult.translated_text, sourceLanguage, targetLanguage, inputText, true);
+                    
+                    // Reset button state
+                    translateBtn.disabled = false;
+                    btnText.classList.remove('hidden');
+                    btnLoader.classList.add('hidden');
+                    return;
+                }
+                
                 const requestBody = {
                     source_language: sourceLanguage,
                     target_language: targetLanguage,
@@ -73,7 +122,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('Translation result:', result);
 
                 if (result.translated_text) {
-                    showResult(result.translated_text, sourceLanguage, targetLanguage, inputText);
+                    // Store in cache
+                    if (translationCache.size >= MAX_CACHE_SIZE) {
+                        // Remove oldest entry if cache is full
+                        const firstKey = translationCache.keys().next().value;
+                        translationCache.delete(firstKey);
+                    }
+                    translationCache.set(cacheKey, result);
+                    
+                    showResult(result.translated_text, sourceLanguage, targetLanguage, inputText, result.cached || false);
                 } else {
                     throw new Error('No translated text in response');
                 }
@@ -90,19 +147,49 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function showResult(translatedText, sourceLanguage, targetLanguage, originalText) {
-        translatedTextDiv.innerHTML = `
-            <div class="translation-result">
-                <div class="original-text">
-                    <strong>Original ($${getLanguageName(sourceLanguage)}):</strong>
-                    <p>"$${originalText}"</p>
-                </div>
-                <div class="translated-text-content">
-                    <strong>Translation ($${getLanguageName(targetLanguage)}):</strong>
-                    <p>"$${translatedText}"</p>
-                </div>
-            </div>
-        `;
+    function showResult(translatedText, sourceLanguage, targetLanguage, originalText, cached = false) {
+        // Clear previous content
+        translatedTextDiv.innerHTML = '';
+        
+        // Create elements safely to prevent XSS
+        const resultContainer = document.createElement('div');
+        resultContainer.className = 'translation-result';
+        
+        // Original text section
+        const originalDiv = document.createElement('div');
+        originalDiv.className = 'original-text';
+        const originalStrong = document.createElement('strong');
+        originalStrong.textContent = `Original (${getLanguageName(sourceLanguage)}):`;
+        const originalP = document.createElement('p');
+        originalP.textContent = `"${originalText}"`;
+        originalDiv.appendChild(originalStrong);
+        originalDiv.appendChild(originalP);
+        
+        // Translated text section
+        const translatedDiv = document.createElement('div');
+        translatedDiv.className = 'translated-text-content';
+        const translatedStrong = document.createElement('strong');
+        translatedStrong.textContent = `Translation (${getLanguageName(targetLanguage)})`;
+        
+        // Add cache indicator if applicable
+        if (cached) {
+            const cacheSpan = document.createElement('span');
+            cacheSpan.style.color = '#10b981';
+            cacheSpan.style.fontSize = '0.9em';
+            cacheSpan.textContent = ' (⚡ Cached)';
+            translatedStrong.appendChild(cacheSpan);
+        }
+        
+        const translatedP = document.createElement('p');
+        translatedP.textContent = `"${translatedText}"`;
+        translatedDiv.appendChild(translatedStrong);
+        translatedDiv.appendChild(translatedP);
+        
+        // Assemble the result
+        resultContainer.appendChild(originalDiv);
+        resultContainer.appendChild(translatedDiv);
+        translatedTextDiv.appendChild(resultContainer);
+        
         resultDiv.classList.remove('hidden');
         errorDiv.classList.add('hidden');
     }

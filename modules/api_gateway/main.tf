@@ -160,6 +160,30 @@ resource "aws_api_gateway_stage" "main" {
   deployment_id = aws_api_gateway_deployment.main.id
   rest_api_id   = aws_api_gateway_rest_api.main.id
   stage_name    = var.environment
+  
+  # Performance and monitoring settings
+  xray_tracing_enabled = true
+  
+  tags = var.tags
+}
+
+# ---------------------------------------------------------------------------------------------------------------------
+# API GATEWAY METHOD SETTINGS - Configure performance settings
+# Note: Caching is disabled for POST requests as they typically have unique request bodies.
+# Caching is implemented at Lambda (in-memory) and frontend (browser) levels instead.
+# ---------------------------------------------------------------------------------------------------------------------
+resource "aws_api_gateway_method_settings" "translate_settings" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  stage_name  = aws_api_gateway_stage.main.stage_name
+  method_path = "translate/POST"
+
+  settings {
+    metrics_enabled        = true
+    logging_level          = "INFO"
+    data_trace_enabled     = false
+    throttling_rate_limit  = 100   # Sustained rate: 100 requests per second
+    throttling_burst_limit = 200   # Burst capacity: 200 requests
+  }
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -208,4 +232,71 @@ resource "aws_api_gateway_method_response" "translate_get_200" {
   response_parameters = {
     "method.response.header.Access-Control-Allow-Origin" = true
   }
+}
+
+# ---------------------------------------------------------------------------------------------------------------------
+# CLOUDWATCH ALARMS FOR API GATEWAY PERFORMANCE MONITORING
+# ---------------------------------------------------------------------------------------------------------------------
+
+# Alarm for API Gateway 4XX errors
+resource "aws_cloudwatch_metric_alarm" "api_4xx_errors" {
+  alarm_name          = "${var.project}-${var.environment}-api-4xx-errors"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "4XXError"
+  namespace           = "AWS/ApiGateway"
+  period              = 60
+  statistic           = "Sum"
+  threshold           = 10
+  alarm_description   = "This metric monitors API Gateway 4XX errors"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    ApiName = aws_api_gateway_rest_api.main.name
+    Stage   = aws_api_gateway_stage.main.stage_name
+  }
+
+  tags = var.tags
+}
+
+# Alarm for API Gateway 5XX errors
+resource "aws_cloudwatch_metric_alarm" "api_5xx_errors" {
+  alarm_name          = "${var.project}-${var.environment}-api-5xx-errors"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "5XXError"
+  namespace           = "AWS/ApiGateway"
+  period              = 60
+  statistic           = "Sum"
+  threshold           = 5
+  alarm_description   = "This metric monitors API Gateway 5XX errors"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    ApiName = aws_api_gateway_rest_api.main.name
+    Stage   = aws_api_gateway_stage.main.stage_name
+  }
+
+  tags = var.tags
+}
+
+# Alarm for API Gateway latency
+resource "aws_cloudwatch_metric_alarm" "api_latency" {
+  alarm_name          = "${var.project}-${var.environment}-api-latency"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "Latency"
+  namespace           = "AWS/ApiGateway"
+  period              = 60
+  statistic           = "Average"
+  threshold           = 2000  # Alert if average latency exceeds 2 seconds
+  alarm_description   = "This metric monitors API Gateway latency"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    ApiName = aws_api_gateway_rest_api.main.name
+    Stage   = aws_api_gateway_stage.main.stage_name
+  }
+
+  tags = var.tags
 }

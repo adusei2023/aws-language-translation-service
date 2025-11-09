@@ -1,15 +1,45 @@
 import json
 import boto3
 import logging
+import os
+import hashlib
 from datetime import datetime
 import uuid
+from collections import OrderedDict
 
 # Configure logging
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+log_level = os.environ.get('LOG_LEVEL', 'INFO')
+logger.setLevel(getattr(logging, log_level))
 
-# Initialize AWS Translate client
+# Initialize AWS Translate client outside handler for connection reuse
 translate = boto3.client('translate')
+
+# LRU cache implementation for repeated translations
+class LRUCache:
+    def __init__(self, capacity: int):
+        self.cache = OrderedDict()
+        self.capacity = capacity
+    
+    def get(self, key: str):
+        if key not in self.cache:
+            return None
+        # Move to end to mark as recently used
+        self.cache.move_to_end(key)
+        return self.cache[key]
+    
+    def put(self, key: str, value: str):
+        if key in self.cache:
+            # Remove existing key first
+            del self.cache[key]
+        # Add/update value at the end
+        self.cache[key] = value
+        # Evict least recently used item if over capacity
+        if len(self.cache) > self.capacity:
+            self.cache.popitem(last=False)
+
+# Initialize cache
+translation_cache = LRUCache(capacity=100)
 
 def lambda_handler(event, context):
     """
@@ -122,41 +152,61 @@ def lambda_handler(event, context):
         
         logger.info(f"Translating: '{text}' from {source_language} to {target_language}")
         
-        # Call AWS Translate
-        try:
-            response = translate.translate_text(
-                Text=text,
-                SourceLanguageCode=source_language,
-                TargetLanguageCode=target_language
-            )
-            
-            translated_text = response['TranslatedText']
-            logger.info(f"Translation successful: {translated_text}")
-            
-            # Return success response
-            return {
-                'statusCode': 200,
-                'headers': cors_headers,
-                'body': json.dumps({
-                    'original_text': text,
-                    'translated_text': translated_text,
-                    'source_language': source_language,
-                    'target_language': target_language,
-                    'timestamp': timestamp,
-                    'request_id': unique_id
-                })
-            }
-            
-        except Exception as translate_error:
-            logger.error(f"Translation service error: {str(translate_error)}")
-            return {
-                'statusCode': 500,
-                'headers': cors_headers,
-                'body': json.dumps({
-                    'error': 'Translation service failed',
-                    'details': str(translate_error)
-                })
-            }
+        # Generate secure cache key using hash to prevent collision attacks
+        # Hash combines all components to create a unique, safe cache key
+        cache_key = hashlib.sha256(
+            f"{source_language}|{target_language}|{text}".encode('utf-8')
+        ).hexdigest()
+        
+        # Check cache first for improved performance
+        cached_translation = translation_cache.get(cache_key)
+        is_cached = cached_translation is not None
+        
+        if is_cached:
+            logger.info(f"Cache hit - returning cached translation. Cache size: {len(translation_cache.cache)}")
+            translated_text = cached_translation
+        else:
+            # Call AWS Translate
+            try:
+                response = translate.translate_text(
+                    Text=text,
+                    SourceLanguageCode=source_language,
+                    TargetLanguageCode=target_language
+                )
+                
+                translated_text = response['TranslatedText']
+                
+                # Store in LRU cache
+                translation_cache.put(cache_key, translated_text)
+                logger.info(f"Translation cached. Cache size: {len(translation_cache.cache)}")
+                
+                logger.info(f"Translation successful: {translated_text}")
+                
+            except Exception as translate_error:
+                logger.error(f"Translation service error: {str(translate_error)}")
+                return {
+                    'statusCode': 500,
+                    'headers': cors_headers,
+                    'body': json.dumps({
+                        'error': 'Translation service failed',
+                        'details': str(translate_error)
+                    })
+                }
+        
+        # Return success response
+        return {
+            'statusCode': 200,
+            'headers': cors_headers,
+            'body': json.dumps({
+                'original_text': text,
+                'translated_text': translated_text,
+                'source_language': source_language,
+                'target_language': target_language,
+                'timestamp': timestamp,
+                'request_id': unique_id,
+                'cached': is_cached
+            })
+        }
         
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}", exc_info=True)
